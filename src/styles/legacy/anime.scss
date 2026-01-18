@@ -1,0 +1,1113 @@
+/* Legacy anime detail UI (ported from the original Vue project) */
+
+.anime-detail {
+  min-height: 100vh;
+  position: relative;
+  background: #f5f7fa;
+}
+
+/* Doraemon: fullscreen container + floating nav */
+.doraemon-fullscreen {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  padding-top: 60px;
+  box-sizing: border-box;
+
+  @media screen and (max-width: 768px) {
+    padding-top: 100px;
+  }
+}
+
+.anime-nav--floating {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.anime-nav--floating .anime-nav__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.anime-nav--floating .anime-nav__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+}
+
+.anime-nav--floating .anime-nav__links {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.anime-nav--floating .anime-nav__item {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.anime-nav--floating .anime-nav__item--active {
+  color: white;
+  background: #2f76d2;
+}
+
+/* Doraemon Author (sticky + scroll progress, from DoraemonAuthor.vue) */
+.doraemon-author {
+  width: 100%;
+  height: 950vh;
+  position: relative;
+  background: #0b0f1a;
+}
+
+.doraemon-author .author-container {
+  display: flex;
+  width: 100%;
+  height: 100vh;
+  padding: 60px 80px;
+  box-sizing: border-box;
+  gap: 60px;
+  position: sticky;
+  top: 0;
+}
+
+.doraemon-author .author-left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.doraemon-author .author-right {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 100px;
+  min-width: 0;
+}
+
+.doraemon-author .author-text {
+  color: white;
+  opacity: 1;
+  width: 100%;
+  max-width: 720px;
+}
+
+.doraemon-author .author-title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  background: linear-gradient(90deg, #00d4ff, #7b2cbf);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.doraemon-author .author-subtitle {
+  font-size: 1.2rem;
+  color: #a0a0a0;
+  margin: 0 0 40px 0;
+  font-style: italic;
+}
+
+.doraemon-author .author-intro-text {
+  margin-bottom: 40px;
+  position: relative;
+  min-height: 200px;
+}
+
+.doraemon-author .paragraph {
+  font-size: 1rem;
+  line-height: 1.8;
+  color: #e0e0e0;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.doraemon-author .author-links {
+  display: flex;
+  gap: 15px;
+}
+
+.doraemon-author .link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  background: rgba(0, 212, 255, 0.1);
+  border: 2px solid #00d4ff;
+  border-radius: 8px;
+  color: #00d4ff;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.3s ease;
+
+  &:hover {
+    background: #00d4ff;
+    color: #1a1a2e;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 212, 255, 0.3);
+  }
+}
+
+.doraemon-author .author-images {
+  position: relative;
+  width: 100%;
+  height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.doraemon-author .photo-item {
+  position: absolute;
+  width: 80%;
+  height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s ease;
+
+  img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s ease;
+  }
+
+  .photo-caption {
+    margin-top: 20px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.5s ease;
+  }
+}
+
+.doraemon-author .timeline-container {
+  position: fixed;
+  right: 40px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 20px 0;
+  max-height: 70vh;
+}
+
+.doraemon-author .timeline-section {
+  padding-left: 29px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: none;
+}
+
+.doraemon-author .timeline-line {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, #1a1a2e, #16213e);
+}
+
+.doraemon-author .timeline-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  opacity: 0.3;
+  transition: opacity 1.2s ease, transform 1.2s ease, filter 1.2s ease;
+  transform: translateX(0);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+
+  &.active {
+    opacity: 1;
+    transform: translateX(-10px);
+  }
+
+  &:hover {
+    opacity: 1;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(0, 212, 255, 0.55);
+    outline-offset: 6px;
+    border-radius: 12px;
+  }
+}
+
+.doraemon-author .timeline-item--edge {
+  opacity: 0.14;
+  filter: blur(0.6px);
+  transform: translateX(0) scale(0.95);
+}
+
+.doraemon-author .timeline-item.timeline-item--edge:hover {
+  opacity: 0.6;
+  filter: blur(0);
+  transform: translateX(-6px) scale(1);
+}
+
+.doraemon-author .timeline-item--edge .timeline-dot {
+  opacity: 0.65;
+  transform: scale(0.9);
+}
+
+.doraemon-author .timeline-item--edge .timeline-year {
+  opacity: 0.75;
+}
+
+.doraemon-author .timeline-item--edge .timeline-description {
+  opacity: 0.5;
+}
+
+.doraemon-author .timeline-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: rgba(155, 89, 182, 0.3);
+  border: 2px solid #9b59b6;
+  transition: box-shadow 1s ease, transform 1s ease, opacity 1s ease, background 1s ease;
+  flex-shrink: 0;
+}
+
+.doraemon-author .timeline-item.active .timeline-dot {
+  background: #9b59b6;
+  box-shadow: 0 0 20px rgba(155, 89, 182, 0.8), 0 0 40px rgba(155, 89, 182, 0.4);
+  transform: scale(1.3);
+}
+
+.doraemon-author .timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.doraemon-author .timeline-year {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #9b59b6;
+  transition: color 1s ease, text-shadow 1s ease, font-size 1s ease, opacity 1s ease;
+}
+
+.doraemon-author .timeline-item.active .timeline-year {
+  color: #9b59b6;
+  text-shadow: 0 0 10px rgba(155, 89, 182, 0.5);
+  font-size: 1.4rem;
+}
+
+.doraemon-author .timeline-description {
+  font-size: 0.85rem;
+  color: #a0a0a0;
+  width: 150px;
+  max-width: 150px;
+  line-height: 1.4;
+  transition: color 1s ease, font-size 1s ease, opacity 1s ease;
+}
+
+.doraemon-author .timeline-item.active .timeline-description {
+  color: #e0e0e0;
+  font-size: 0.95rem;
+}
+
+@media screen and (max-width: 1024px) {
+  .doraemon-author .author-container {
+    flex-direction: column;
+    padding: 40px;
+    gap: 30px;
+  }
+
+  .doraemon-author .author-left,
+  .doraemon-author .author-right {
+    flex: none;
+    width: 100%;
+  }
+
+  .doraemon-author .author-text {
+    max-width: 100%;
+  }
+
+  .doraemon-author .timeline-container {
+    right: 20px;
+    gap: 20px;
+  }
+
+  .doraemon-author .timeline-description {
+    font-size: 0.75rem;
+    width: 120px;
+    max-width: 120px;
+  }
+}
+
+@media screen and (max-width: 768px) {
+  .doraemon-author .author-title {
+    font-size: 2rem;
+  }
+
+  .doraemon-author .author-subtitle {
+    font-size: 1rem;
+  }
+
+  .doraemon-author .paragraph {
+    font-size: 0.9rem;
+  }
+
+  .doraemon-author .timeline-container {
+    display: none;
+  }
+
+  .doraemon-author .photo-item img {
+    max-height: 50vh;
+  }
+}
+
+.anime-header {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.anime-header__background {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(3px);
+  transform: scale(1.05);
+}
+
+.anime-header__background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+.anime-header__content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  height: 100%;
+}
+
+.anime-header__info {
+  color: white;
+}
+
+.anime-header__title {
+  margin: 0 0 16px;
+  font-size: 3.5rem;
+  font-weight: 800;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.anime-header__subtitle {
+  margin: 0;
+  font-size: 1.25rem;
+  opacity: 0.9;
+}
+
+.anime-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.anime-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.14);
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+    transform: translateY(-1px);
+  }
+}
+
+.anime-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.anime-nav__container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  gap: 8px;
+}
+
+.anime-nav__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 24px;
+  color: #5e6b7a;
+  text-decoration: none;
+  font-weight: 700;
+  border-bottom: 3px solid transparent;
+  transition: all 0.3s ease;
+
+  &:hover {
+    color: #2f76d2;
+    background: rgba(47, 118, 210, 0.05);
+  }
+}
+
+.anime-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  min-height: 600px;
+}
+
+/* Theme colors */
+.anime-detail--doraemon .anime-nav__item--active {
+  color: #2f76d2;
+  border-bottom-color: #2f76d2;
+}
+
+.anime-detail--koe-no-katachi .anime-nav__item--active {
+  color: #f5b942;
+  border-bottom-color: #f5b942;
+}
+
+.anime-detail--bunny-girl .anime-nav__item--active {
+  color: #f0654a;
+  border-bottom-color: #f0654a;
+}
+
+@media screen and (max-width: 768px) {
+  .anime-header {
+    height: 300px;
+  }
+
+  .anime-header__content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 20px;
+  }
+
+  .anime-header__title {
+    font-size: 2rem;
+  }
+
+  .anime-header__subtitle {
+    font-size: 1rem;
+  }
+
+  .anime-nav__container {
+    overflow-x: auto;
+    padding: 0 16px;
+  }
+
+  .anime-nav__item {
+    padding: 12px 16px;
+    white-space: nowrap;
+  }
+
+  .anime-content {
+    padding: 24px 16px;
+  }
+
+  .anime-nav--floating .anime-nav__container {
+    flex-direction: column;
+    padding: 8px 16px;
+    gap: 10px;
+  }
+
+  .anime-nav--floating .anime-nav__links {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .anime-nav--floating .anime-nav__item {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+}
+
+/* Author card (non-doraemon) */
+.anime-author {
+  min-height: 600px;
+}
+
+.author-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.author-header {
+  display: flex;
+  gap: 30px;
+  margin-bottom: 40px;
+  align-items: center;
+}
+
+.author-header__avatar {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 4px solid #2f76d2;
+  box-shadow: 0 8px 24px rgba(47, 118, 210, 0.3);
+}
+
+.author-header__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.author-header__info {
+  flex: 1;
+}
+
+.author-header__info h2 {
+  margin: 0 0 12px;
+  font-size: 2rem;
+  color: #1b2430;
+}
+
+.author-header__info p {
+  margin: 0;
+  color: #5e6b7a;
+  font-size: 1.1rem;
+}
+
+.author-bio {
+  margin-bottom: 40px;
+}
+
+.author-bio .bio-section {
+  line-height: 1.8;
+  color: #1b2430;
+  font-size: 1.05rem;
+}
+
+.author-bio .bio-section p {
+  margin: 0 0 16px;
+}
+
+.author-links {
+  margin-bottom: 40px;
+}
+
+.author-links h3,
+.author-gallery h3 {
+  margin: 0 0 20px;
+  font-size: 1.5rem;
+  color: #1b2430;
+}
+
+.author-links .link-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.author-links .link-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #f5f7fa;
+  border-radius: 12px;
+  color: #2f76d2;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.author-links .link-item:hover {
+  background: #2f76d2;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(47, 118, 210, 0.3);
+}
+
+.author-gallery .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.author-gallery .gallery-grid img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  border-radius: 12px;
+  transition: transform 0.3s ease;
+}
+
+.author-gallery .gallery-grid img:hover {
+  transform: scale(1.05);
+}
+
+@media screen and (max-width: 768px) {
+  .author-card {
+    padding: 24px;
+  }
+
+  .author-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .author-header__avatar {
+    width: 120px;
+    height: 120px;
+  }
+
+  .author-gallery .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* Character grid (non-doraemon) */
+.anime-character {
+  min-height: 600px;
+}
+
+.character-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.character-item {
+  background: #f5f7fa;
+  border-radius: 16px;
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.character-item:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+.character-item__image {
+  height: 250px;
+  overflow: hidden;
+}
+
+.character-item__image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.character-item:hover .character-item__image img {
+  transform: scale(1.1);
+}
+
+.character-item__info {
+  padding: 24px;
+}
+
+.character-item__info h3 {
+  margin: 0 0 8px;
+  font-size: 1.5rem;
+  color: #1b2430;
+}
+
+.character-item__info .realname {
+  margin: 0 0 16px;
+  color: #5e6b7a;
+  font-size: 0.95rem;
+}
+
+.character-details {
+  margin-bottom: 16px;
+  color: #5e6b7a;
+}
+
+.character-details p {
+  margin: 0 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
+
+.character-nature {
+  margin: 0 0 16px;
+  color: #1b2430;
+  line-height: 1.6;
+}
+
+.character-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.character-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.character-tag--success {
+  color: #15803d;
+  border-color: rgba(22, 163, 74, 0.25);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.character-tag--danger {
+  color: #b91c1c;
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+@media screen and (max-width: 768px) {
+  .character-card {
+    padding: 24px;
+  }
+
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .character-item__image {
+    height: 200px;
+  }
+}
+
+/* Website page */
+.anime-website {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.section-title {
+  margin: 0 0 24px;
+  font-size: 1.5rem;
+  color: #1b2430;
+}
+
+.website-section,
+.video-section {
+  margin-bottom: 40px;
+}
+
+.website-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.website-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #f5f7fa;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.website-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.website-card img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+}
+
+.website-card__content {
+  padding: 16px;
+}
+
+.website-card__content h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  color: #1b2430;
+}
+
+.website-card__content p {
+  margin: 0;
+  color: #5e6b7a;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.video-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.video-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background: #f5f7fa;
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.video-card:hover {
+  background: #2f76d2;
+  color: white;
+  transform: scale(1.05);
+}
+
+.video-card img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.video-card span {
+  font-weight: 700;
+  text-align: center;
+}
+
+.anime-empty {
+  color: #5e6b7a;
+  font-size: 1rem;
+  text-align: center;
+  padding: 20px 0;
+}
+
+@media screen and (max-width: 768px) {
+  .anime-website {
+    padding: 24px;
+  }
+
+  .video-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Doraemon AuthorIntro (typing + text clip) */
+.author-intro {
+  background: black;
+  position: relative;
+  width: 100vw;
+  height: 100%;
+  overflow: hidden;
+}
+
+.author-intro .author-search {
+  position: absolute;
+  z-index: 10;
+  bottom: 30vh;
+  left: 10vw;
+  text-align: center;
+}
+
+@media screen and (max-width: 768px) {
+  .author-intro .author-search {
+    display: none;
+  }
+}
+
+.author-intro .author-search a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  font-weight: 700;
+  line-height: 1.5;
+  transition: color 0.2s ease;
+}
+
+.author-intro .author-search a:hover {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.author-intro .author-content {
+  width: 100vw;
+  height: 95%;
+  position: absolute;
+  white-space: pre-wrap;
+  font-size: 2.1vmin;
+  z-index: 9;
+}
+
+.author-intro .author-content div {
+  width: 25vw;
+}
+
+@media screen and (max-width: 768px) {
+  .author-intro .author-content div {
+    width: 100vw;
+    font-size: 20px;
+  }
+}
+
+.author-intro .author-content .left {
+  position: absolute;
+  top: 5vh;
+  left: 5vw;
+}
+
+.author-intro .author-content .right {
+  position: absolute;
+  top: 5vh;
+  right: 5vw;
+}
+
+@media screen and (max-width: 768px) {
+  .author-intro .author-content .left,
+  .author-intro .author-content .right {
+    position: relative;
+    left: 0;
+    right: 0;
+    top: 50%;
+  }
+}
+
+.author-intro .author-content span {
+  position: relative;
+  color: white;
+}
+
+.author-intro .author-content span::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  width: 2px;
+  height: 3vmin;
+  transform: translate(5px, 0.5vmin);
+  animation: authorCursor 1.1s infinite;
+}
+
+@keyframes authorCursor {
+  0%,
+  100% {
+    background: transparent;
+  }
+  50% {
+    background-color: #f0f0f0;
+  }
+}
+
+.author-intro .author-img {
+  height: 100%;
+  overflow: hidden;
+  font-size: 1em;
+  font-family: Arial, sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 0.4em;
+  color: transparent;
+  background-image: url("/assets/doraemon/author-1.webp"), url("/assets/doraemon/author-1.webp");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-blend-mode: soft-light;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+@media screen and (max-width: 768px) {
+  .author-intro .author-img {
+    height: 50%;
+  }
+}

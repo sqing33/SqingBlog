@@ -1,0 +1,23 @@
+.notesGrid {
+  background-image: linear-gradient(
+      to right,
+      rgba(15, 23, 42, 0.05) 1px,
+      transparent 1px
+    ),
+    linear-gradient(to bottom, rgba(15, 23, 42, 0.05) 1px, transparent 1px);
+  background-size: var(--notes-col-step, calc(100% / 12))
+    var(--notes-row-step, var(--notes-row-height, 72px));
+  background-position: var(--notes-padding-x, 0px) var(--notes-padding-y, 0px);
+  border-radius: 24px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .notesGrid {
+    background-image: linear-gradient(
+        to right,
+        rgba(226, 232, 240, 0.08) 1px,
+        transparent 1px
+      ),
+      linear-gradient(to bottom, rgba(226, 232, 240, 0.08) 1px, transparent 1px);
+  }
+}
