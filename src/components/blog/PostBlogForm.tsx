@@ -120,7 +120,7 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
         title,
         category: selectedCategories.join(","),
         content,
-        coverUrl: coverFilename,
+        coverUrl: coverFilename || (isEditMode ? initialData!.coverUrl : null),
         layoutType,
       };
       const res = await fetch("/api/blog", {
@@ -222,33 +222,35 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
           <div className="space-y-2 lg:col-span-1">
             <Label>封面（可选）</Label>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Input
-                type="file"
-                accept="image/*"
-                disabled={uploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) uploadCover(file);
-                }}
-              />
-              {coverUrl ? (
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setCoverUrl(null);
-                    setCoverFilename(null);
+              <div className="flex-1">
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadCover(file);
                   }}
-                  type="button"
-                >
-                  移除封面
-                </Button>
+                />
+              </div>
+              {coverUrl ? (
+                <>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setCoverUrl(null);
+                      setCoverFilename(null);
+                    }}
+                    type="button"
+                  >
+                    移除
+                  </Button>
+                  <div className="overflow-hidden rounded-xl border bg-muted sm:w-24 sm:h-24 w-full h-24 shrink-0">
+                    <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+                  </div>
+                </>
               ) : null}
             </div>
-            {coverUrl ? (
-              <div className="overflow-hidden rounded-xl border bg-muted">
-                <img src={coverUrl} alt="" className="h-24 w-full object-cover" />
-              </div>
-            ) : null}
           </div>
         </div>
 

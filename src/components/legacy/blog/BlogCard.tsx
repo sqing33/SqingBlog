@@ -37,7 +37,8 @@ export function BlogCard({
   onClick?: () => void;
 }) {
   const isHero = post.layoutType === "hero" || post.layoutType === "large";
-  const coverSrc = post.coverUrl || "/assets/Doraemon/Doraemon.jpg";
+  const hasCover = !!post.coverUrl;
+  const coverSrc = post.coverUrl || "";
   const authorAvatar = post.avatarUrl || "/assets/avatar.png";
   const categories = post.category
     ? post.category.split(",").map((c) => c.trim()).filter(Boolean)
@@ -45,7 +46,11 @@ export function BlogCard({
 
   return (
     <article
-      className={cn("blog-card", isHero ? "blog-card--hero" : "blog-card--standard")}
+      className={cn(
+        "blog-card",
+        isHero ? "blog-card--hero" : "blog-card--standard",
+        !hasCover && "blog-card--no-cover"
+      )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
@@ -54,25 +59,27 @@ export function BlogCard({
         if (e.key === "Enter" || e.key === " ") onClick();
       }}
     >
-      <div className="card-media">
-        <div className="media-inner">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={coverSrc} alt={post.title} className="card-image" />
-          <div className="card-tags">
-            {categories.length > 0 ? (
-              categories.map((cat) => (
-                <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>
-              ))
-            ) : (
-              <span className={cn("card-tag", tagClassForCategory(null))}>Blog</span>
-            )}
+      {hasCover && (
+        <div className="card-media">
+          <div className="media-inner">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverSrc} alt={post.title} className="card-image" />
+            <div className="card-tags">
+              {categories.length > 0 ? (
+                categories.map((cat) => (
+                  <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>
+                ))
+              ) : (
+                <span className={cn("card-tag", tagClassForCategory(null))}>Blog</span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div className="card-content">
         <h3 className="content-title">{post.title}</h3>
-        {isHero ? <p className="content-excerpt">{post.excerpt}</p> : null}
+        {!hasCover && <p className="content-excerpt">{post.excerpt}</p>}
 
         <div className={cn("content-footer", isHero && "content-footer--hero")}>
           {isHero ? (
@@ -83,6 +90,14 @@ export function BlogCard({
                 <span className="author-name">{post.nickname || "Admin"}</span>
               </div>
               <div className="content-meta content-meta--bottom">
+                {!hasCover && categories.length > 0 && (
+                  <>
+                    {categories.map((cat) => (
+                      <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>
+                    ))}
+                    <span className="meta-dot" />
+                  </>
+                )}
                 <span className="meta-date">{post.create_time?.split(" ")[0]}</span>
                 <span className="meta-dot" />
                 <span className="meta-read">{post.readingMinutes || 1} 分钟阅读</span>
@@ -94,6 +109,14 @@ export function BlogCard({
                 <span className="meta-date">{post.create_time?.split(" ")[0]}</span>
                 <span className="meta-dot" />
                 <span className="meta-read">{post.readingMinutes || 1} 分钟阅读</span>
+                {!hasCover && categories.length > 0 && (
+                  <>
+                    <span className="meta-dot" />
+                    {categories.map((cat) => (
+                      <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>
+                    ))}
+                  </>
+                )}
               </div>
               <span className="author-name">{post.nickname || "Admin"}</span>
             </>

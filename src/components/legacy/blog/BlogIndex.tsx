@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { BlogHeaderNav } from "@/components/legacy/blog/BlogHeaderNav";
 import { BlogSidebar } from "@/components/legacy/blog/BlogSidebar";
 import { BlogCard, type BlogCardPost } from "@/components/legacy/blog/BlogCard";
 import { BlogCategoryFilter } from "@/components/legacy/blog/BlogCategoryFilter";
@@ -203,9 +202,7 @@ export function BlogIndex() {
   const goToPost = (id: string) => router.push(`/blog/${id}`);
 
   return (
-    <div className="blog" style={{ "--progress": 0, "--header-progress": 0, "--header-offset": "450px" } as never}>
-      <BlogHeaderNav />
-
+    <div className="blog">
       <div className="blog-shell">
         <div className="blog-layout">
 	          <div className="main-col">
@@ -217,7 +214,13 @@ export function BlogIndex() {
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
                     placeholder="搜索标题或内容…"
-                    className="search-input h-10 rounded-xl border border-black/10 bg-white px-3 text-sm shadow-sm outline-none focus:border-black/20"
+                    className="search-input h-10 rounded-xl border border-white/60 bg-white/4 px-3 text-sm shadow-sm outline-none focus:border-white/80 backdrop-blur-md"
+                    style={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
+                      backdropFilter: 'blur(4px)',
+                      WebkitBackdropFilter: 'blur(4px)',
+                      boxShadow: '0 40px 50px -32px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.25)'
+                    }}
                     onKeyDown={(e) => {
                       if (e.key !== "Enter") return;
                       setPage(1);

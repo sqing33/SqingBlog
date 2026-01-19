@@ -181,10 +181,10 @@ function buildWordItems(stats: WordStat[], width: number, height: number) {
 
     const opacity =
       variant === "outline"
-        ? randomBetween(0.08, 0.18)
+        ? randomBetween(0.15, 0.25)
         : variant === "soft"
-          ? randomBetween(0.07, 0.16)
-          : randomBetween(0.06, 0.14);
+          ? randomBetween(0.12, 0.22)
+          : randomBetween(0.1, 0.2);
 
     const duration = randomBetween(18, 42);
     const delay = randomBetween(-24, 0);

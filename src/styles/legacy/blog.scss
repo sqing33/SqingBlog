@@ -1,5 +1,8 @@
 /* Legacy blog UI (ported from the original Vue project) */
 
+// 引入玻璃效果样式
+@use "../glassmorphism.scss" as *;
+
 /* Row/Col helpers (ElementPlus replacement) */
 .blog-layout {
   display: flex;
@@ -411,12 +414,12 @@
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
-  padding-top: var(--header-offset, 450px);
+  padding-top: 50px;
 }
 
 @media screen and (max-width: 768px) {
   .blog:not(.blog-page) .blog-shell {
-    padding-top: 380px;
+    padding-top: 0;
   }
 }
 
@@ -452,13 +455,26 @@
   border: 1px solid rgba(17, 24, 39, 0.06);
   position: relative;
   overflow: hidden;
+
+  // 玻璃效果
+  background-color: rgba(255, 255, 255, 0.04);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .main-col {
   .panel {
-    background: transparent;
-    box-shadow: none;
-    border: none;
+    background-color: rgba(255, 255, 255, 0.04);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    box-shadow:
+      0 40px 50px -32px rgba(0, 0, 0, 0.05),
+      inset 0 0 20px rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.6);
   }
 }
 
@@ -471,11 +487,19 @@
   margin-bottom: 14px;
   z-index: 10;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.04);
   padding: 16px 18px;
   border-radius: var(--radius-lg);
   box-shadow: 0 14px 36px rgba(17, 24, 39, 0.12);
   border: 1px solid rgba(17, 24, 39, 0.06);
+
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .panel__header-center {
@@ -522,12 +546,20 @@
   transform: translateX(-50%);
   width: 320px;
   max-width: 92vw;
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(17, 24, 39, 0.15);
   border: 1px solid rgba(17, 24, 39, 0.08);
   padding: 16px;
   z-index: 1000;
+
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .filter-card__title {
@@ -573,7 +605,7 @@
 .filter-category-item {
   padding: 8px 6px;
   border-radius: 8px;
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(17, 24, 39, 0.06);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -585,17 +617,35 @@
   text-overflow: ellipsis;
 
   &:hover {
-    background: #f0f4ff;
+    background: rgba(255, 255, 255, 0.9);
     border-color: rgba(47, 118, 210, 0.2);
     color: #2f76d2;
   }
 }
 
 .filter-category-item--active {
-  background: rgba(47, 118, 210, 0.1);
+  background: rgba(47, 118, 210, 0.15);
   border-color: rgba(47, 118, 210, 0.3);
   color: #2f76d2;
   font-weight: 600;
+  backdrop-filter: blur(4px);
+}
+
+// 在玻璃卡片中的分类筛选项样式调整
+.aside-filter.glass-card {
+  .filter-category-item {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(4px);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.75);
+    }
+  }
+
+  .filter-category-item--active {
+    background: rgba(47, 118, 210, 0.2);
+    backdrop-filter: blur(4px);
+  }
 }
 
 .filter-card__footer {
@@ -702,11 +752,19 @@
   display: flex;
   justify-content: center;
   margin-top: 18px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.04);
   padding: 16px 18px;
   border-radius: var(--radius-lg);
   box-shadow: 0 14px 36px rgba(17, 24, 39, 0.12);
   border: 1px solid rgba(17, 24, 39, 0.06);
+
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 @media screen and (max-width: 768px) {
@@ -720,18 +778,28 @@
 /* Blog card */
 .blog-card {
   position: relative;
-  background: #fff;
+  background: rgba(255, 255, 255, 0.04);
   border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  border: 1px solid rgba(17, 24, 39, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 26px rgba(17, 24, 39, 0.08);
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
   height: 325px;
 
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+
   &:hover {
-    box-shadow: 0 18px 44px rgba(17, 24, 39, 0.14);
-    border-color: rgba(17, 24, 39, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    box-shadow:
+      0 50px 60px -40px rgba(0, 0, 0, 0.08),
+      inset 0 0 25px rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.8);
 
     .card-image {
       transform: scale(1.03);
@@ -739,6 +807,25 @@
     .content-title {
       color: #4b5563;
     }
+  }
+}
+
+.blog-card--no-cover {
+  height: auto;
+  min-height: 200px;
+
+  .card-content {
+    padding: 18px 16px;
+  }
+
+  .content-title {
+    -webkit-line-clamp: 3;
+    margin-bottom: 10px;
+  }
+
+  .content-excerpt {
+    -webkit-line-clamp: 4;
+    margin-bottom: 16px;
   }
 }
 
@@ -908,6 +995,13 @@
 .content-meta--bottom {
   margin: 0;
 }
+
+.content-meta .card-tag {
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  box-shadow: none;
+  backdrop-filter: none;
+}
 .meta-dot {
   width: 4px;
   height: 4px;
@@ -1014,6 +1108,26 @@
   border: 1px solid rgba(17, 24, 39, 0.06);
   position: relative;
   overflow: hidden;
+
+  // 玻璃效果变体
+  &.glass-card {
+    background-color: rgba(255, 255, 255, 0.04);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    box-shadow:
+      0 40px 50px -32px rgba(0, 0, 0, 0.05),
+      inset 0 0 20px rgba(255, 255, 255, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    border-radius: 40px;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.06);
+      box-shadow:
+        0 50px 60px -40px rgba(0, 0, 0, 0.08),
+        inset 0 0 25px rgba(255, 255, 255, 0.35);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+  }
 }
 
 .user-card {
@@ -1116,7 +1230,7 @@
 .user-card__more {
   appearance: none;
   border: 1px solid rgba(47, 118, 210, 0.2);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.3);
   color: #2f76d2;
   border-radius: 999px;
   padding: 6px 12px;
@@ -1125,8 +1239,12 @@
   cursor: pointer;
   transition: all 0.2s ease;
 
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+
   &:hover {
-    background: rgba(47, 118, 210, 0.08);
+    background: rgba(255, 255, 255, 0.5);
     border-color: rgba(47, 118, 210, 0.3);
     transform: translateY(-1px);
   }
@@ -1184,6 +1302,18 @@
   }
 }
 
+// 在玻璃卡片中的统计卡片样式调整
+.panel.panel--aside.glass-card .user-card__stat {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  border-color: rgba(255, 255, 255, 0.3);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.8);
+    border-color: rgba(47, 118, 210, 0.3);
+  }
+}
+
 .panel.panel--aside .user-card__stat-label {
   font-size: 0.82rem;
   font-weight: 800;
@@ -1217,6 +1347,10 @@
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 14px 28px rgba(47, 118, 210, 0.16);
@@ -1245,6 +1379,13 @@
   text-align: center;
 }
 
+// 在玻璃卡片中的 CTA 区域样式调整
+.panel.panel--aside.glass-card .cta-section {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(4px);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 .cta-section .cta__desc {
   margin: 0 0 12px;
   color: #5e6b7a;
@@ -1259,13 +1400,18 @@
   padding: 12px 14px;
   border: none;
   cursor: pointer;
-  background: #2f76d2;
+  background: rgba(47, 118, 210, 0.8);
   color: #ffffff;
   box-shadow: 0 14px 28px rgba(47, 118, 210, 0.22);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+
   &:hover {
     transform: translateY(-1px);
+    background: rgba(47, 118, 210, 0.9);
     box-shadow: 0 18px 36px rgba(47, 118, 210, 0.28);
   }
 }
@@ -1273,13 +1419,21 @@
 .latest-strip {
   position: relative;
   z-index: 1;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.04);
   padding: 14px 14px 12px;
   border-radius: var(--radius-lg);
   box-shadow: 0 14px 36px rgba(17, 24, 39, 0.12);
   border: 1px solid rgba(17, 24, 39, 0.06);
   margin-bottom: 16px;
   overflow: hidden;
+
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 40px 50px -32px rgba(0, 0, 0, 0.05),
+    inset 0 0 20px rgba(255, 255, 255, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.6);
 }
 
 .latest-strip__header {
@@ -1327,15 +1481,19 @@
   scroll-snap-align: start;
   display: block;
   padding: 12px;
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 14px;
   border: 1px solid rgba(17, 24, 39, 0.06);
   text-decoration: none;
   transition: all 0.2s ease;
+
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
 }
 
 .latest-strip__item:hover {
-  background: #f0f4ff;
+  background: rgba(255, 255, 255, 0.5);
   border-color: rgba(47, 118, 210, 0.2);
   transform: translateY(-1px);
   box-shadow: 0 10px 20px rgba(17, 24, 39, 0.1);
@@ -1390,14 +1548,18 @@
 .latest-post-item {
   display: block;
   padding: 12px;
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.3);
   border-radius: 12px;
   border: 1px solid rgba(17, 24, 39, 0.06);
   transition: all 0.2s ease;
   text-decoration: none;
 
+  // 玻璃效果
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+
   &:hover {
-    background: #f0f4ff;
+    background: rgba(255, 255, 255, 0.5);
     border-color: rgba(47, 118, 210, 0.2);
     transform: translateX(4px);
     box-shadow: 0 4px 12px rgba(17, 24, 39, 0.08);

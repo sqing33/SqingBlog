@@ -16,7 +16,7 @@ export function BlogCategoryFilter({
   const selectable = categories.filter((c) => c.value !== "0");
 
   return (
-    <section className="panel panel--aside aside-filter" aria-label="分类筛选">
+    <section className="panel panel--aside aside-filter glass-card" aria-label="分类筛选">
       <div className="panel__header">
         <h3 className="panel__title">分类筛选</h3>
         <span className="panel__hint">可多选</span>

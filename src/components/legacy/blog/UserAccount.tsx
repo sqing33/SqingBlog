@@ -227,7 +227,7 @@ export function UserAccount({
   }
 
   return (
-    <section className="panel panel--aside user-account-panel">
+    <section className="panel panel--aside user-account-panel glass-card">
       <div className="side-card__header">
         <h4 className="side-card__title">账号</h4>
       </div>
