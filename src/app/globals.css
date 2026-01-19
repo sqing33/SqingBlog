@@ -215,8 +215,46 @@ h6 {
   }
 }
 
+.dora-jump-arrow {
+  animation: dora-jump-arrow 0.9s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes dora-jump-arrow {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-8px);
+  }
+}
+
+.home-scroll-hint-bob {
+  animation: home-scroll-hint-bob 1.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes home-scroll-hint-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dora-word-bg__item {
+    animation: none;
+  }
+
+  .dora-jump-arrow {
+    animation: none;
+  }
+
+  .home-scroll-hint-bob {
     animation: none;
   }
 }

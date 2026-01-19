@@ -1,5 +1,5 @@
-import { BlogIndex } from "@/components/legacy/blog/BlogIndex";
+import { HomeWithCarousel } from "@/components/home/HomeWithCarousel";
 
 export default function Home() {
-  return <BlogIndex />;
+  return <HomeWithCarousel />;
 }
