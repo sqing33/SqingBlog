@@ -26,6 +26,18 @@ export function requireSession(
   return payload;
 }
 
+export async function requireServerSession(
+  role: "user" | "admin"
+): Promise<SessionTokenPayload> {
+  const cookieStore = await nextCookies();
+  const cookieName = role === "admin" ? ADMIN_COOKIE : USER_COOKIE;
+  const token = cookieStore.get(cookieName)?.value ?? "";
+  if (!token) throw new Error("UNAUTHORIZED");
+  const payload = verifySessionToken(token);
+  if (payload.role !== role) throw new Error("FORBIDDEN");
+  return payload;
+}
+
 export async function setServerCookie(
   name: string,
   value: string,

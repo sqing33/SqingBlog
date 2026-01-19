@@ -16,7 +16,6 @@ type BlogRow = {
   content: string;
   create_time: string;
   coverUrl: string | null;
-  category: string;
   layoutType: string | null;
   user_id: string;
   username: string;
@@ -43,10 +42,10 @@ function buildWhere(params: {
       .filter(Boolean);
 
     if (parts.length === 1) {
-      conditions.push("b.category = ?");
+      conditions.push("EXISTS (SELECT 1 FROM blog_category_relation bcr WHERE bcr.blog_id = b.id AND bcr.category_name = ?)");
       sqlParams.push(parts[0]!);
     } else if (parts.length > 1) {
-      conditions.push(`b.category IN (${parts.map(() => "?").join(",")})`);
+      conditions.push(`EXISTS (SELECT 1 FROM blog_category_relation bcr WHERE bcr.blog_id = b.id AND bcr.category_name IN (${parts.map(() => "?").join(",")}))`);
       sqlParams.push(...parts);
     }
   }
@@ -85,7 +84,8 @@ export async function GET(req: NextRequest) {
   const { whereSql, sqlParams } = buildWhere({ category, keyword, date });
 
   const baseQuery = `
-    SELECT b.*, u.id AS user_id, u.username, u.nickname, u.avatarUrl
+    SELECT b.id, b.title, b.content, b.create_time, b.coverUrl, b.layoutType,
+           u.id AS user_id, u.username, u.nickname, u.avatarUrl
     FROM blog b
     JOIN user_blog ub ON b.id = ub.blog_id
     JOIN users u ON ub.user_id = u.id
@@ -103,19 +103,38 @@ export async function GET(req: NextRequest) {
     );
 
     const countRows = await mysqlQuery<{ total: number }>(
-      `SELECT COUNT(*) AS total FROM blog b${whereSql}`,
+      `SELECT COUNT(DISTINCT b.id) AS total FROM blog b${whereSql}`,
       sqlParams
     );
 
     const total = countRows?.[0]?.total ?? blogArr.length;
 
-    const normalized = blogArr.map((row) => ({
-      ...row,
-      id: String(row.id),
-      user_id: String(row.user_id),
-      coverUrl: resolveUploadImageUrl(row.coverUrl, "news"),
-      avatarUrl: resolveUploadImageUrl(row.avatarUrl, "avatars"),
-    }));
+    const blogIds = blogArr.map((row) => row.id);
+    const categoryRelations = blogIds.length > 0
+      ? await mysqlQuery<{ blog_id: string; category_name: string }>(
+          `SELECT blog_id, category_name FROM blog_category_relation WHERE blog_id IN (${blogIds.map(() => "?").join(",")})`,
+          blogIds
+        )
+      : [];
+
+    const categoryMap = new Map<string, string[]>();
+    for (const rel of categoryRelations) {
+      const categories = categoryMap.get(rel.blog_id) || [];
+      categories.push(rel.category_name);
+      categoryMap.set(rel.blog_id, categories);
+    }
+
+    const normalized = blogArr.map((row) => {
+      const categories = categoryMap.get(row.id) || [];
+      return {
+        ...row,
+        id: String(row.id),
+        user_id: String(row.user_id),
+        category: categories.join(","),
+        coverUrl: resolveUploadImageUrl(row.coverUrl, "news"),
+        avatarUrl: resolveUploadImageUrl(row.avatarUrl, "avatars"),
+      };
+    });
 
     return ok({ blogArr: normalized, total });
   } catch (err) {
@@ -156,10 +175,26 @@ export async function POST(req: NextRequest) {
   const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
   const normalizedLayout = (layoutType || "").trim() || null;
 
+  const categories = category
+    .split(",")
+    .map((c) => c.trim())
+    .filter(Boolean);
+
   try {
+    for (const cat of categories) {
+      await mysqlExec("INSERT IGNORE INTO blog_category (name, create_time) VALUES (?, ?)", [
+        cat,
+        createTime,
+      ]);
+      await mysqlExec(
+        "INSERT INTO blog_category_relation (blog_id, category_name, create_time) VALUES (?, ?, ?)",
+        [id, cat, createTime]
+      );
+    }
+
     await mysqlExec(
-      "INSERT INTO blog (id, title, content, category, coverUrl, layoutType, create_time) VALUES (?,?,?,?,?,?,?)",
-      [id, title, content, category, normalizedCover, normalizedLayout, createTime]
+      "INSERT INTO blog (id, title, content, coverUrl, layoutType, create_time) VALUES (?,?,?,?,?,?)",
+      [id, title, content, normalizedCover, normalizedLayout, createTime]
     );
     await mysqlExec("INSERT INTO user_blog (user_id, blog_id) VALUES (?,?)", [
       payload.sub,
@@ -169,5 +204,85 @@ export async function POST(req: NextRequest) {
     return ok({ id }, { status: 201, message: "发布成功" });
   } catch (err) {
     return fail("发布失败", { status: 500, code: "DB_ERROR" });
+  }
+}
+
+const updateSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).max(255),
+  content: z.string().min(1),
+  category: z.string().min(1).max(255),
+  coverUrl: z.string().optional().nullable(),
+  layoutType: z.string().optional().nullable(),
+});
+
+export async function PUT(req: NextRequest) {
+  let payload;
+  try {
+    payload = requireSession(req, "user");
+  } catch {
+    return fail("请先登录", { status: 401, code: "UNAUTHORIZED" });
+  }
+
+  const json = await req.json().catch(() => null);
+  const parsed = updateSchema.safeParse(json);
+  if (!parsed.success) {
+    return fail("帖子内容不完整或格式错误", {
+      status: 400,
+      code: "INVALID_INPUT",
+      details: parsed.error.flatten(),
+    });
+  }
+
+  const { id, title, content, category, coverUrl, layoutType } = parsed.data;
+
+  try {
+    const ownershipRows = await mysqlQuery<{ user_id: string }>(
+      "SELECT user_id FROM user_blog WHERE blog_id = ? LIMIT 1",
+      [id]
+    );
+
+    if (!ownershipRows.length) {
+      return fail("帖子不存在", { status: 404, code: "NOT_FOUND" });
+    }
+
+    const ownerId = ownershipRows[0]!.user_id;
+    if (ownerId !== payload.sub) {
+      return fail("无权编辑此帖子", { status: 403, code: "FORBIDDEN" });
+    }
+
+    const updateTime = toMySqlDateTime();
+    const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
+    const normalizedLayout = (layoutType || "").trim() || null;
+
+    const categories = category
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    for (const cat of categories) {
+      await mysqlExec("INSERT IGNORE INTO blog_category (name, create_time) VALUES (?, ?)", [
+        cat,
+        updateTime,
+      ]);
+    }
+
+    await mysqlExec("DELETE FROM blog_category_relation WHERE blog_id = ?", [id]);
+
+    for (const cat of categories) {
+      await mysqlExec(
+        "INSERT INTO blog_category_relation (blog_id, category_name, create_time) VALUES (?, ?, ?)",
+        [id, cat, updateTime]
+      );
+    }
+
+    await mysqlExec(
+      "UPDATE blog SET title = ?, content = ?, coverUrl = ?, layoutType = ? WHERE id = ?",
+      [title, content, normalizedCover, normalizedLayout, id]
+    );
+
+    return ok({ id }, { status: 200, message: "更新成功" });
+  } catch (err) {
+    return fail("更新失败", { status: 500, code: "DB_ERROR" });
   }
 }

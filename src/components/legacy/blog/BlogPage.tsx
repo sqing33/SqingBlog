@@ -17,6 +17,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Edit } from "lucide-react";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -31,6 +32,7 @@ type UserMe = {
 
 export type BlogDetailViewModel = {
   id: string;
+  user_id: string;
   title: string;
   contentRaw: string;
   contentHtml: string;
@@ -713,6 +715,19 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
               <div className="blog-actions-wrapper">
                 <nav className="blog-actions">
+                  {me && me.id === post.user_id ? (
+                    <button
+                      type="button"
+                      className="blog-action"
+                      onClick={() => router.push(`/blog/${post.id}/edit`)}
+                    >
+                      <div className="blog-action__circle">
+                        <Edit />
+                      </div>
+                      <span className="blog-action__text">编辑</span>
+                    </button>
+                  ) : null}
+
                   <button type="button" className="blog-action" onClick={doShare}>
                     <div className="blog-action__circle">
                       <Share2 />

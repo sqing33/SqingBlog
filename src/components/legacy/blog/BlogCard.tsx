@@ -39,7 +39,9 @@ export function BlogCard({
   const isHero = post.layoutType === "hero" || post.layoutType === "large";
   const coverSrc = post.coverUrl || "/assets/Doraemon/Doraemon.jpg";
   const authorAvatar = post.avatarUrl || "/assets/avatar.png";
-  const tagClass = tagClassForCategory(post.category);
+  const categories = post.category
+    ? post.category.split(",").map((c) => c.trim()).filter(Boolean)
+    : [];
 
   return (
     <article
@@ -56,7 +58,15 @@ export function BlogCard({
         <div className="media-inner">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={coverSrc} alt={post.title} className="card-image" />
-          <span className={cn("card-tag", tagClass)}>{post.category || "Blog"}</span>
+          <div className="card-tags">
+            {categories.length > 0 ? (
+              categories.map((cat) => (
+                <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>
+              ))
+            ) : (
+              <span className={cn("card-tag", tagClassForCategory(null))}>Blog</span>
+            )}
+          </div>
         </div>
       </div>
 

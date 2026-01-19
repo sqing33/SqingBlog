@@ -15,6 +15,7 @@ export function MarkdownEditor({
   preview = "live",
   placeholder,
   className,
+  autoHeight = false,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -22,19 +23,21 @@ export function MarkdownEditor({
   preview?: PreviewMode;
   placeholder?: string;
   className?: string;
+  autoHeight?: boolean;
 }) {
   return (
     <div
       data-color-mode="light"
-      className={cn("markdown-editor overflow-hidden rounded-xl border bg-white/70", className)}
+      className={cn("markdown-editor overflow-hidden rounded-xl border bg-white/70", className, autoHeight && "h-full flex flex-col")}
     >
       <MDEditor
         value={value}
         onChange={(next) => onChange(next ?? "")}
-        height={height}
+        height={autoHeight ? 400 : height}
         preview={preview}
         visibleDragbar={false}
         textareaProps={{ placeholder }}
+        className={autoHeight ? "flex-1 !h-full" : undefined}
       />
     </div>
   );

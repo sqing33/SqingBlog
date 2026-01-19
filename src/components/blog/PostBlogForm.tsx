@@ -14,9 +14,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { MarkdownEditor } from "@/components/markdown/MarkdownEditor";
+import { CategorySelector } from "@/components/blog/CategorySelector";
+import { Plus, X } from "lucide-react";
 
-const categories = [
+type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
+
+type CategoryOption = { label: string; value: string };
+
+type BlogInitialData = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  coverUrl: string | null;
+  layoutType: string | null;
+};
+
+const fallbackCategories: CategoryOption[] = [
   { label: "分享", value: "分享" },
   { label: "娱乐", value: "娱乐" },
   { label: "杂谈", value: "杂谈" },
@@ -27,23 +43,34 @@ const layoutOptions = [
   { label: "大卡片（一行一张）", value: "large" },
 ] as const;
 
-export function PostBlogForm() {
+type PostBlogFormProps = {
+  initialData?: BlogInitialData | null;
+};
+
+export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
 
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState(categories[0]?.value ?? "分享");
-  const [layoutType, setLayoutType] = useState<(typeof layoutOptions)[number]["value"]>("standard");
-  const [content, setContent] = useState("");
-  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(
+    initialData?.category ? initialData.category.split(",").map((c) => c.trim()).filter(Boolean) : [fallbackCategories[0]?.value ?? "分享"]
+  );
+  const [categorySelectorOpen, setCategorySelectorOpen] = useState(false);
+  const [layoutType, setLayoutType] = useState<(typeof layoutOptions)[number]["value"]>(
+    (initialData?.layoutType as (typeof layoutOptions)[number]["value"]) ?? "standard"
+  );
+  const [content, setContent] = useState(initialData?.content ?? "");
+  const [coverUrl, setCoverUrl] = useState<string | null>(initialData?.coverUrl ?? null);
   const [coverFilename, setCoverFilename] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isEditMode = Boolean(initialData?.id);
+
   const canSubmit = useMemo(() => {
-    return title.trim() && category.trim() && content.trim() && !submitting;
-  }, [title, category, content, submitting]);
+    return title.trim() && selectedCategories.length > 0 && content.trim() && !submitting;
+  }, [title, selectedCategories, content, submitting]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
@@ -87,44 +114,47 @@ export function PostBlogForm() {
     setSubmitting(true);
     setError(null);
     try {
+      const method = isEditMode ? "PUT" : "POST";
+      const body = {
+        ...(isEditMode ? { id: initialData!.id } : {}),
+        title,
+        category: selectedCategories.join(","),
+        content,
+        coverUrl: coverFilename,
+        layoutType,
+      };
       const res = await fetch("/api/blog", {
-        method: "POST",
+        method,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          title,
-          category,
-          content,
-          coverUrl: coverFilename,
-          layoutType,
-        }),
+        body: JSON.stringify(body),
       });
       const json = await res.json();
       if (res.status === 401) {
         router.push("/login");
         return;
       }
-      if (!res.ok || !json?.ok) throw new Error(json?.message || "POST_FAILED");
+      if (!res.ok || !json?.ok) throw new Error(json?.message || `${method}_FAILED`);
       router.push(`/blog/${json.data.id}`);
     } catch {
-      setError("发布失败，请稍后重试");
+      setError(isEditMode ? "更新失败，请稍后重试" : "发布失败，请稍后重试");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>发表帖子</CardTitle>
+    <Card className="fixed inset-0 z-50 m-0 h-screen w-screen rounded-none border-0">
+      <CardHeader className="flex-none px-6 py-4">
+        <CardTitle>{isEditMode ? "编辑帖子" : "发表帖子"}</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 pb-[calc(92px+env(safe-area-inset-bottom))] sm:space-y-6 sm:pb-0">
+      <CardContent className="flex h-[calc(100vh-120px)] flex-col space-y-4 overflow-hidden px-6 pb-0 sm:space-y-6">
         {error ? (
-          <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
+          <div className="flex-none rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm">
             {error}
           </div>
         ) : null}
 
-        <div className="grid gap-4 lg:grid-cols-3 lg:items-start">
+        <div className="flex-none grid gap-4 lg:grid-cols-3 lg:items-start">
           <div className="space-y-2 lg:col-span-1">
             <Label htmlFor="title">标题</Label>
             <Input
@@ -138,18 +168,33 @@ export function PostBlogForm() {
           <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-1">
             <div className="min-w-0 space-y-2">
               <Label>类型</Label>
-              <Select value={category} onValueChange={setCategory}>
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categories.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex min-h-[42px] flex-wrap gap-2 rounded-md border p-2">
+                {selectedCategories.length === 0 ? (
+                  <span className="text-muted-foreground text-sm">暂未选择类型</span>
+                ) : (
+                  selectedCategories.map((cat) => (
+                    <Badge key={cat} variant="secondary" className="gap-1 pr-1">
+                      {cat}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCategories(selectedCategories.filter((c) => c !== cat))}
+                        className="hover:bg-accent/50 rounded-sm p-0.5"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2"
+                  onClick={() => setCategorySelectorOpen(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
             </div>
 
             <div className="min-w-0 space-y-2">
@@ -207,50 +252,40 @@ export function PostBlogForm() {
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="flex-1 min-h-0 space-y-2 flex flex-col">
           <Label>内容（Markdown）</Label>
-          <MarkdownEditor
-            value={content}
-            onChange={setContent}
-            height={editorHeight}
-            preview={isMobile ? "edit" : "live"}
-            placeholder="把灵感放进时光胶囊，分享给更多人。"
-          />
+          <div className="flex-1 min-h-0">
+            <MarkdownEditor
+              value={content}
+              onChange={setContent}
+              height={400}
+              preview={isMobile ? "edit" : "live"}
+              placeholder="把灵感放进时光胶囊，分享给更多人。"
+              autoHeight
+            />
+          </div>
         </div>
 
-        <div className="hidden items-center gap-2 sm:flex">
+        <div className="flex-none flex items-center gap-2">
           <Button disabled={!canSubmit} onClick={onSubmit} type="button">
-            {submitting ? "发布中..." : "发布"}
+            {submitting ? (isEditMode ? "更新中..." : "发布中...") : (isEditMode ? "更新" : "发布")}
           </Button>
           <Button
             variant="secondary"
             type="button"
-            onClick={() => router.push("/blog")}
+            onClick={() => isEditMode ? router.push(`/blog/${initialData!.id}`) : router.push("/blog")}
           >
             取消
           </Button>
         </div>
-
-        <div className="fixed inset-x-0 bottom-0 z-50 sm:hidden">
-          <div className="border-t bg-card/90 backdrop-blur">
-            <div className="mx-auto w-full max-w-[1200px] px-4 pb-[calc(12px+env(safe-area-inset-bottom))] pt-3">
-              <div className="flex items-center gap-3">
-                <Button className="flex-1" disabled={!canSubmit} onClick={onSubmit} type="button">
-                  {submitting ? "发布中..." : "发布"}
-                </Button>
-                <Button
-                  className="flex-1"
-                  variant="secondary"
-                  type="button"
-                  onClick={() => router.push("/blog")}
-                >
-                  取消
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
       </CardContent>
+
+      <CategorySelector
+        open={categorySelectorOpen}
+        onOpenChange={setCategorySelectorOpen}
+        selectedCategories={selectedCategories}
+        onSelectedCategoriesChange={setSelectedCategories}
+      />
     </Card>
   );
 }
