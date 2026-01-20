@@ -245,6 +245,20 @@ h6 {
   }
 }
 
+.home-music-disc-spin {
+  animation: home-music-disc-spin 6s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes home-music-disc-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dora-word-bg__item {
     animation: none;
@@ -255,6 +269,10 @@ h6 {
   }
 
   .home-scroll-hint-bob {
+    animation: none;
+  }
+
+  .home-music-disc-spin {
     animation: none;
   }
 }

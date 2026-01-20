@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import { HomeMusicPlayer } from "@/components/home/HomeMusicPlayer";
 import { MoyuCard } from "@/components/home/MoyuCard";
 import { BlogIndex } from "@/components/legacy/blog/BlogIndex";
 
@@ -162,6 +163,9 @@ export function HomeWithCarousel() {
 
   return (
     <div className="relative">
+      <div className="fixed right-6 top-6 z-50">
+        <HomeMusicPlayer />
+      </div>
       <section
         ref={heroRef}
         aria-label="首页拼图"
