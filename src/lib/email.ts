@@ -17,13 +17,12 @@ export async function sendVerificationCode(email: string, code: string) {
     },
   });
 
-  const fromName = env.EMAIL_FROM_NAME || "哆啦A梦世界探索";
+  const fromName = env.EMAIL_FROM_NAME || "三青的世界探索";
 
   await transporter.sendMail({
     from: `${fromName} <${env.EMAIL_USER}>`,
     to: email,
     subject: fromName,
-    text: `欢迎访问哆啦A梦世界探索网站，您的验证码是：${code}，有效期为2分钟。`,
+    text: `欢迎访问三青的世界探索网站，您的验证码是：${code}，有效期为5分钟。`,
   });
 }
-

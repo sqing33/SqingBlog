@@ -105,11 +105,22 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<string | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
 
   const trackList = tracks ?? [];
   const activeTrack = trackList[activeIndex];
   const hasLoaded = tracks !== null;
   const hasTracks = trackList.length > 0;
+  const previewOpen = !open && isHovering;
+  const previewSize = 5;
+  const previewStart =
+    trackList.length > previewSize
+      ? Math.min(
+          Math.max(activeIndex - 2, 0),
+          Math.max(trackList.length - previewSize, 0)
+        )
+      : 0;
+  const previewTracks = trackList.slice(previewStart, previewStart + previewSize);
 
   const loadMeta = useCallback(async (file: string | null) => {
     metaAbortRef.current?.abort();
@@ -301,125 +312,185 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
   return (
     <>
       <div
-        role="button"
-        tabIndex={0}
-        aria-label="打开音乐播放器"
-        onClick={async () => {
-          setOpen(true);
-          if (!hasLoaded) {
-            await loadTracks({
-              autoplay: false,
-              prevFile: activeTrack?.file ?? null,
-              wasPlaying: isPlaying,
-            });
-          }
-        }}
-        onKeyDown={async (e) => {
-          if (e.key !== "Enter" && e.key !== " ") return;
-          e.preventDefault();
-          setOpen(true);
-          if (!hasLoaded) {
-            await loadTracks({
-              autoplay: false,
-              prevFile: activeTrack?.file ?? null,
-              wasPlaying: isPlaying,
-            });
-          }
-        }}
         className={cn(
-          "flex h-16 w-[min(20rem,92vw)] items-center overflow-hidden rounded-2xl border border-black/15 bg-white/95 p-2 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)]",
-          "cursor-pointer select-none",
+          "w-[min(20rem,92vw)] overflow-hidden rounded-2xl border border-black/15 bg-white/95 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)]",
           className
         )}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
       >
-        <audio
-          ref={audioRef}
-          src={activeTrack?.url}
-          preload="metadata"
-          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-          onLoadedMetadata={(e) => {
-            const d = e.currentTarget.duration;
-            setDuration(Number.isFinite(d) ? d : 0);
-          }}
-          onPlay={() => {
-            setIsPlaying(true);
-            isPlayingRef.current = true;
-          }}
-          onPause={() => {
-            setIsPlaying(false);
-            isPlayingRef.current = false;
-          }}
-          onEnded={handleEnded}
-          onCanPlay={async () => {
-            if (!autoPlayAfterChangeRef.current) return;
-            autoPlayAfterChangeRef.current = false;
-            try {
-              await audioRef.current?.play();
-            } catch {
-              // ignore
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="打开音乐播放器"
+          onClick={async () => {
+            setOpen(true);
+            if (!hasLoaded) {
+              await loadTracks({
+                autoplay: false,
+                prevFile: activeTrack?.file ?? null,
+                wasPlaying: isPlaying,
+              });
             }
           }}
-        />
-
-        <div className="min-w-0 flex-1 overflow-hidden px-2">
-          <div className="truncate font-medium text-[#3F3E3E] text-sm">
-            {hasTracks
-              ? (activeTrack?.title ?? "正在播放")
-              : hasLoaded
-              ? "public/music 下没有音频文件"
-              : "点击播放加载音乐"}
-          </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[#3F3E3E]/70 text-xs">
-            <span>
-              {formatTime(currentTime)} / {duration ? formatTime(duration) : "--:--"}
-            </span>
-            {loadError ? <span className="truncate">· {loadError}</span> : null}
-          </div>
-        </div>
-
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={isPlaying ? "暂停" : "播放"}
-          disabled={hasLoaded && !hasTracks}
-          className={cn(
-            "group relative size-12 shrink-0 rounded-full hover:bg-transparent active:bg-transparent"
-          )}
-          onPointerDown={stopOpen}
-          onClick={async (e) => {
-            stopOpen(e);
-            await handleTogglePlay();
+          onKeyDown={async (e) => {
+            if (e.key !== "Enter" && e.key !== " ") return;
+            e.preventDefault();
+            setOpen(true);
+            if (!hasLoaded) {
+              await loadTracks({
+                autoplay: false,
+                prevFile: activeTrack?.file ?? null,
+                wasPlaying: isPlaying,
+              });
+            }
           }}
+          className="flex h-16 w-full items-center p-2 text-left cursor-pointer select-none"
         >
-          <div
-            className={cn(
-              "absolute inset-0 overflow-hidden rounded-full transition-opacity duration-200",
-              isPlaying ? "home-music-disc-spin" : "group-hover:opacity-60"
-            )}
-          >
-            <div className="relative h-full w-full">
-              {coverDataUrl ? (
-                <Image
-                  src={coverDataUrl}
-                  alt={activeTrack?.title ? `${activeTrack.title} cover` : "cover"}
-                  fill
-                  sizes="48px"
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <Disc3 className="h-full w-full text-[#3F3E3E]/25" />
-              )}
+          <audio
+            ref={audioRef}
+            src={activeTrack?.url}
+            preload="metadata"
+            onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+            onLoadedMetadata={(e) => {
+              const d = e.currentTarget.duration;
+              setDuration(Number.isFinite(d) ? d : 0);
+            }}
+            onPlay={() => {
+              setIsPlaying(true);
+              isPlayingRef.current = true;
+            }}
+            onPause={() => {
+              setIsPlaying(false);
+              isPlayingRef.current = false;
+            }}
+            onEnded={handleEnded}
+            onCanPlay={async () => {
+              if (!autoPlayAfterChangeRef.current) return;
+              autoPlayAfterChangeRef.current = false;
+              try {
+                await audioRef.current?.play();
+              } catch {
+                // ignore
+              }
+            }}
+          />
+
+          <div className="min-w-0 flex-1 overflow-hidden px-2">
+            <div className="truncate font-medium text-[#3F3E3E] text-sm">
+              {hasTracks
+                ? (activeTrack?.title ?? "正在播放")
+                : hasLoaded
+                ? "public/music 下没有音频文件"
+                : "点击播放加载音乐"}
+            </div>
+            <div className="mt-0.5 flex items-center gap-2 text-[#3F3E3E]/70 text-xs">
+              <span>
+                {formatTime(currentTime)} /{" "}
+                {duration ? formatTime(duration) : "--:--"}
+              </span>
+              {loadError ? <span className="truncate">· {loadError}</span> : null}
             </div>
           </div>
 
-          {isPlaying ? (
-            <Pause className="relative size-5 text-[#3F3E3E]/75" />
-          ) : (
-            <Play className="relative size-5 text-[#3F3E3E]/75 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={isPlaying ? "暂停" : "播放"}
+            disabled={hasLoaded && !hasTracks}
+            className={cn(
+              "group relative size-12 shrink-0 rounded-full hover:bg-transparent active:bg-transparent"
+            )}
+            onPointerDown={stopOpen}
+            onClick={async (e) => {
+              stopOpen(e);
+              await handleTogglePlay();
+            }}
+          >
+            <div
+              className={cn(
+                "absolute inset-0 overflow-hidden rounded-full transition-opacity duration-200",
+                isPlaying ? "home-music-disc-spin" : "group-hover:opacity-60"
+              )}
+            >
+              <div className="relative h-full w-full">
+                {coverDataUrl ? (
+                  <Image
+                    src={coverDataUrl}
+                    alt={activeTrack?.title ? `${activeTrack.title} cover` : "cover"}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <Disc3 className="h-full w-full text-[#3F3E3E]/25" />
+                )}
+              </div>
+            </div>
+
+            {isPlaying ? (
+              <Pause className="relative size-5 text-[#3F3E3E]/75" />
+            ) : (
+              <Play className="relative size-5 text-[#3F3E3E]/75 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+            )}
+          </Button>
+        </div>
+
+        <div
+          aria-hidden={!previewOpen}
+          className={cn(
+            "overflow-hidden transition-[max-height,opacity] duration-200",
+            previewOpen ? "max-h-[260px] opacity-100" : "max-h-0 opacity-0"
           )}
-        </Button>
+        >
+          <div className="border-t border-black/10 p-2">
+            <div className="rounded-md border bg-white/70">
+              {hasTracks ? (
+                <div className="divide-y">
+                  {previewTracks.map((t, offset) => {
+                    const idx = previewStart + offset;
+                    const active = idx === activeIndex;
+                    return (
+                      <button
+                        key={t.id ?? t.file}
+                        type="button"
+                        className={cn(
+                          "flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm",
+                          "hover:bg-accent",
+                          active ? "bg-accent/60" : ""
+                        )}
+                        onClick={() => {
+                          const audio = audioRef.current;
+                          const autoplay = audio ? !audio.paused : isPlaying;
+                          requestTrackChange(idx, autoplay);
+                        }}
+                      >
+                        <span className="min-w-0 flex-1 truncate font-medium">
+                          {t.title}
+                        </span>
+                        {active ? (
+                          <span className="shrink-0 text-xs opacity-70">
+                            {isPlaying ? "播放中" : "已暂停"}
+                          </span>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-3 text-muted-foreground text-sm">
+                  {hasLoaded
+                    ? loadError
+                      ? `加载失败：${loadError}`
+                      : "没有找到音频文件"
+                    : "加载中..."}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

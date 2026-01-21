@@ -6,7 +6,7 @@ import { mysqlExec, mysqlQuery } from "@/lib/db/mysql";
 import { SnowflakeId } from "@/lib/id/snowflake";
 import { toMySqlDateTime } from "@/lib/date";
 import { requireSession } from "@/lib/auth/session";
-import { extractUploadFilename, resolveUploadImageUrl } from "@/lib/uploads";
+import { resolveUploadImageUrl } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
   const idGen = new SnowflakeId({ WorkerId: 1 });
   const id = idGen.nextString();
   const createTime = toMySqlDateTime();
-  const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
+  const normalizedCover = coverUrl && coverUrl.trim() ? coverUrl.trim() : null;
 
   const categories = category
     .split(",")
@@ -278,7 +278,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const updateTime = toMySqlDateTime();
-    const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
+    const normalizedCover = coverUrl && coverUrl.trim() ? coverUrl.trim() : null;
 
     const categories = category
       .split(",")

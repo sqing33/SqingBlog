@@ -43,7 +43,10 @@ type TocItem = { id: string; text: string; level: number };
 const MarkdownBody = memo(function MarkdownBody({ html }: { html: string }) {
   const memoHtml = useMemo(() => ({ __html: html }), [html]);
   return (
-    <div className="markdown-body bg-transparent text-inherit" dangerouslySetInnerHTML={memoHtml} />
+    <div
+      className="markdown-body bg-transparent text-inherit"
+      dangerouslySetInnerHTML={memoHtml}
+    />
   );
 });
 MarkdownBody.displayName = "MarkdownBody";
@@ -59,7 +62,7 @@ function stripHtml(html: string) {
 function stripMarkdown(md: string) {
   let result = md || "";
   result = result.replace(/```[\s\S]*?```/g, (match) =>
-    match.replace(/^```\w*\n?/gm, "").replace(/```$/gm, "")
+    match.replace(/^```\w*\n?/gm, "").replace(/```$/gm, ""),
   );
   result = result.replace(/`([^`]+)`/g, "$1");
   result = result.replace(/!\[[^\]]*?\]\([^)]+\)/g, " ");
@@ -111,7 +114,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
     const container = contentRef.current;
     if (!container) return;
 
-    const headings = Array.from(container.querySelectorAll("h1, h2, h3, h4, h5, h6"));
+    const headings = Array.from(
+      container.querySelectorAll("h1, h2, h3, h4, h5, h6"),
+    );
     const items: TocItem[] = [];
     headings.forEach((el, index) => {
       const text = (el.textContent || "").trim();
@@ -137,19 +142,25 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
       const accountEl = accountRef.current;
 
       const resolveScroller = () => {
-        const candidate = document.querySelector(".el-scrollbar__wrap") as HTMLElement | null;
+        const candidate = document.querySelector(
+          ".el-scrollbar__wrap",
+        ) as HTMLElement | null;
         if (!candidate) return null;
 
         const style = window.getComputedStyle(candidate);
         const overflowY = style.overflowY;
-        const overflowScrollable = overflowY === "auto" || overflowY === "scroll";
+        const overflowScrollable =
+          overflowY === "auto" || overflowY === "scroll";
         if (!overflowScrollable) return null;
 
         // Use the wrapper only if it behaves like a viewport-sized scroll container.
         // If it expands with content (auto height), scrolling happens on window/document instead.
         const viewportHeight =
-          window.innerHeight || document.documentElement.clientHeight || candidate.clientHeight;
-        const isViewportSized = Math.abs(candidate.clientHeight - viewportHeight) <= 4;
+          window.innerHeight ||
+          document.documentElement.clientHeight ||
+          candidate.clientHeight;
+        const isViewportSized =
+          Math.abs(candidate.clientHeight - viewportHeight) <= 4;
         return isViewportSized ? candidate : null;
       };
 
@@ -185,7 +196,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left top",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -197,7 +208,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1.5,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -207,17 +218,23 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
-      const titleContainerEl = heroEl.querySelector(".blog-hero_title") as HTMLElement | null;
+      const titleContainerEl = heroEl.querySelector(
+        ".blog-hero_title",
+      ) as HTMLElement | null;
       const titleEl = heroEl.querySelector(".blog-title") as HTMLElement | null;
-      const coverEl = heroEl.querySelector(".blog-cover") as HTMLImageElement | null;
+      const coverEl = heroEl.querySelector(
+        ".blog-cover",
+      ) as HTMLImageElement | null;
 
       const heroRect = heroEl.getBoundingClientRect();
       const innerEl = heroEl.querySelector(".blog-hero__inner");
       const innerStyle = innerEl ? window.getComputedStyle(innerEl) : null;
-      const innerPaddingLeft = innerStyle ? parseFloat(innerStyle.paddingLeft) || 0 : 0;
+      const innerPaddingLeft = innerStyle
+        ? parseFloat(innerStyle.paddingLeft) || 0
+        : 0;
 
       let targetTitleWidth = 0;
       if (titleEl) {
@@ -245,14 +262,20 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
         targetCoverWidth = (naturalWidth / naturalHeight) * targetHeight;
       }
 
-      const totalTargetWidth = targetTitleWidth + (targetCoverWidth ? targetCoverWidth + 10 : 0);
+      const totalTargetWidth =
+        targetTitleWidth + (targetCoverWidth ? targetCoverWidth + 10 : 0);
 
       if (titleContainerEl) {
         const containerRect = titleContainerEl.getBoundingClientRect();
         const currentLeft = containerRect.left;
         const windowWidth = window.innerWidth;
 
-        const finalX = windowWidth / 2 - totalTargetWidth / 2 - currentLeft + heroRect.left + innerPaddingLeft;
+        const finalX =
+          windowWidth / 2 -
+          totalTargetWidth / 2 -
+          currentLeft +
+          heroRect.left +
+          innerPaddingLeft;
 
         tl.to(
           titleContainerEl,
@@ -262,7 +285,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
             transformOrigin: "left center",
             duration: 1,
           },
-          0
+          0,
         );
       }
 
@@ -274,7 +297,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
             width: targetTitleWidth,
             duration: 1,
           },
-          0
+          0,
         );
       }
 
@@ -289,7 +312,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
             marginLeft: 10,
             duration: 1,
           },
-          0
+          0,
         );
       }
 
@@ -302,7 +325,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       // Fade out category + reading time (keep author + time like the Vue version)
@@ -318,7 +341,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
               autoAlpha: 0,
               duration: 1,
             },
-            0
+            0,
           );
         }
 
@@ -329,7 +352,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
               autoAlpha: 0,
               duration: 1,
             },
-            0
+            0,
           );
         }
         if (metaDots[2]) {
@@ -339,7 +362,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
               autoAlpha: 0,
               duration: 1,
             },
-            0
+            0,
           );
         }
 
@@ -350,7 +373,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
               autoAlpha: 0,
               duration: 1,
             },
-            0
+            0,
           );
         }
         if (metaDots[3]) {
@@ -360,7 +383,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
               autoAlpha: 0,
               duration: 1,
             },
-            0
+            0,
           );
         }
       }
@@ -376,7 +399,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -387,7 +410,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       // Right account card
@@ -408,7 +431,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "right top",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -418,7 +441,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "right top",
           duration: 1.5,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -428,7 +451,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -441,7 +464,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -451,7 +474,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 1,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -461,7 +484,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 0.5,
         },
-        0
+        0,
       );
 
       tl.to(
@@ -472,7 +495,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           transformOrigin: "left center",
           duration: 0.5,
         },
-        0
+        0,
       );
 
       return () => {
@@ -486,8 +509,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
     const runSetup = () => {
       if (cancelled) return;
-      const fontsReady = (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts
-        ?.ready;
+      const fontsReady = (
+        document as unknown as { fonts?: { ready?: Promise<unknown> } }
+      ).fonts?.ready;
       if (!fontsReady) {
         cleanup = setup();
         return;
@@ -558,14 +582,24 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
   return (
     <div
       className="blog blog-page"
-      style={{ "--progress": 0, "--header-progress": 1, "--header-offset": "0px" } as never}
+      style={
+        {
+          "--progress": 0,
+          "--header-progress": 1,
+          "--header-offset": "0px",
+        } as never
+      }
     >
       <div className="blog-shell">
         <div className="blog-layout">
           <div className="main-col">
             <section ref={heroRef} className="blog-hero">
               <div className="blog-hero__inner">
-                <Link className="blog-hero__back" href="/?panel=blog" aria-label="返回博客列表">
+                <Link
+                  className="blog-hero__back"
+                  href="/?panel=blog"
+                  aria-label="返回博客列表"
+                >
                   <span className="el-icon">
                     <ArrowLeft />
                   </span>
@@ -573,19 +607,25 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
                 <div className="blog-hero__top">
                   <div className="blog-hero__content">
-                    <p className="blog-hero__label">Doraemon Blog</p>
+                    <p className="blog-hero__label">SQBlog</p>
                     <div className="blog-hero_title">
                       <h1 className="blog-title">{post.title}</h1>
                       {post.coverUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img src={post.coverUrl} alt="" className="blog-cover" />
+                        <img
+                          src={post.coverUrl}
+                          alt=""
+                          className="blog-cover"
+                        />
                       ) : null}
                     </div>
                   </div>
                 </div>
 
                 <div className="blog-meta">
-                  <span className="blog-meta__item">{post.nickname || "匿名"}</span>
+                  <span className="blog-meta__item">
+                    {post.nickname || "匿名"}
+                  </span>
                   <span className="blog-meta__dot">•</span>
                   <span className="blog-meta__item">{post.create_time}</span>
                   {post.category ? (
@@ -595,7 +635,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                     </>
                   ) : null}
                   <span className="blog-meta__dot">•</span>
-                  <span className="blog-meta__item">约 {readingMinutes} 分钟阅读</span>
+                  <span className="blog-meta__item">
+                    约 {readingMinutes} 分钟阅读
+                  </span>
                 </div>
               </div>
             </section>
@@ -603,7 +645,10 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
             <section className="blog-body">
               <article className="blog-article">
                 <div className="blog-divider" />
-                <div className="blog-content blog-content-container" ref={contentRef}>
+                <div
+                  className="blog-content blog-content-container"
+                  ref={contentRef}
+                >
                   <MarkdownBody html={post.contentHtml} />
                 </div>
               </article>
@@ -633,11 +678,17 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                     </button>
                   ) : null}
 
-                  <button type="button" className="blog-action" onClick={doShare}>
+                  <button
+                    type="button"
+                    className="blog-action"
+                    onClick={doShare}
+                  >
                     <div className="blog-action__circle">
                       <Share2 />
                     </div>
-                    <span className="blog-action__text">{shareHint || "分享"}</span>
+                    <span className="blog-action__text">
+                      {shareHint || "分享"}
+                    </span>
                   </button>
 
                   <button
@@ -649,10 +700,16 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                     <div className="blog-action__circle">
                       <Star />
                     </div>
-                    <span className="blog-action__text">{collecting ? "收藏中" : "收藏"}</span>
+                    <span className="blog-action__text">
+                      {collecting ? "收藏中" : "收藏"}
+                    </span>
                   </button>
 
-                  <button type="button" className="blog-action" onClick={scrollToComments}>
+                  <button
+                    type="button"
+                    className="blog-action"
+                    onClick={scrollToComments}
+                  >
                     <div className="blog-action__circle">
                       <MessageCircle />
                     </div>
@@ -673,7 +730,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                       {item.text}
                     </li>
                   ))}
-                  {!toc.length ? <li className="toc-item toc-item--empty">暂无目录</li> : null}
+                  {!toc.length ? (
+                    <li className="toc-item toc-item--empty">暂无目录</li>
+                  ) : null}
                 </ul>
               </section>
             </div>

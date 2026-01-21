@@ -19,7 +19,7 @@ export function AdminSidebar() {
         </span>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">管理后台</div>
-          <div className="truncate text-xs text-muted-foreground">Doraemon Blog</div>
+          <div className="truncate text-xs text-muted-foreground">SQBlog</div>
         </div>
       </div>
 
@@ -38,7 +38,7 @@ export function AdminSidebar() {
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
                   active
                     ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground"
+                    : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                 )}
               >
                 <Icon className="size-4" />

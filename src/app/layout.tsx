@@ -34,10 +34,10 @@ const fontSerif = Noto_Serif_SC({
 
 export const metadata: Metadata = {
   title: {
-    default: "Doraemon Blog",
-    template: "%s | Doraemon Blog",
+    default: "SQBlog",
+    template: "%s | SQBlog",
   },
-  description: "哆啦A梦世界探索：博客、新闻、角色与互动。",
+  description: "三青的世界探索：博客、新闻、角色与互动。",
   metadataBase: new URL(siteUrl),
   icons: {
     icon: "/icon.png",

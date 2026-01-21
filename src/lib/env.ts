@@ -19,14 +19,16 @@ const envSchema = z.object({
   ADMIN_PASSWORD_HASH: z
     .string()
     .regex(/^[a-f0-9]{64}$/i)
-    .default("8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"),
+    .default(
+      "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918",
+    ),
 
   EMAIL_HOST: z.string().default("smtp.qq.com"),
   EMAIL_PORT: z.coerce.number().int().positive().default(465),
   EMAIL_SECURE: z.coerce.boolean().default(true),
   EMAIL_USER: z.string().default(""),
   EMAIL_PASS: z.string().default(""),
-  EMAIL_FROM_NAME: z.string().default("哆啦A梦世界探索"),
+  EMAIL_FROM_NAME: z.string().default("三青的世界探索"),
 
   NEXT_PUBLIC_BAIDU_MAP_AK: z.string().default(""),
   NEXT_PUBLIC_BAIDU_MAP_TYPE: z.string().default("WebGL"),
@@ -35,4 +37,3 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse(process.env);
-

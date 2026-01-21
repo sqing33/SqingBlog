@@ -13,6 +13,7 @@ import { BlogIndex } from "@/components/legacy/blog/BlogIndex";
 type GridItem = {
   src: string;
   alt: string;
+  iconHref?: string;
   iconSrc?: string;
   iconAlt?: string;
   iconClassName?: string;
@@ -34,13 +35,12 @@ export function HomeWithCarousel() {
   const [duanzi, setDuanzi] = useState<string | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
 
-  const iconHref = "/anime/doraemon";
-
   const items = useMemo<GridItem[]>(
     () => [
       {
         src: "/assets/index/doraemon.png",
         alt: "doraemon",
+        iconHref: "/anime/doraemon",
         iconSrc: "/assets/index/icon-doraemon.png",
         iconAlt: "doraemon",
         imageClassName: "h-[100%] w-[100%]",
@@ -49,6 +49,7 @@ export function HomeWithCarousel() {
       {
         src: "/assets/index/bunny-girl.png",
         alt: "bunny girl",
+        iconHref: "/anime/bunny-girl",
         iconSrc: "/assets/index/icon-bunny-girl.png",
         iconAlt: "bunny girl",
         imageClassName: "h-[100%] w-[100%]",
@@ -57,6 +58,7 @@ export function HomeWithCarousel() {
       {
         src: "/assets/index/koe-no-katachi.png",
         alt: "koe no katachi",
+        iconHref: "/anime/koe-no-katachi",
         iconSrc: "/assets/index/icon-koe-no-katachi.png",
         iconAlt: "koe no katachi",
         imageClassName: "h-[100%] w-[100%]",
@@ -355,7 +357,7 @@ export function HomeWithCarousel() {
                 >
                   {item.iconSrc ? (
                     <Link
-                      href={iconHref}
+                      href={item.iconHref ?? "/anime"}
                       aria-label={`前往：${item.iconAlt ?? item.alt}`}
                       className="group relative flex h-full w-full -left-10 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
                     >

@@ -26,7 +26,7 @@ export async function POST(req: Request) {
 
   try {
     await ensureRedisConnected();
-    await redisClient.set(`email_code:${email}`, code, "EX", 60 * 2);
+    await redisClient.set(`email_code:${email}`, code, "EX", 60 * 5);
     await sendVerificationCode(email, code);
     return ok(null, { message: "验证码发送成功" });
   } catch (err) {
@@ -37,4 +37,3 @@ export async function POST(req: Request) {
     return fail(message, { status: 500, code: "EMAIL_SEND_FAILED" });
   }
 }
-

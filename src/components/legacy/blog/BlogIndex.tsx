@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { BlogSidebar } from "@/components/legacy/blog/BlogSidebar";
 import { BlogCard, type BlogCardPost } from "@/components/legacy/blog/BlogCard";
 import { BlogCategoryFilter } from "@/components/legacy/blog/BlogCategoryFilter";
+import { BlogAnimeQuickLinks } from "@/components/legacy/blog/BlogAnimeQuickLinks";
 
 type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
 
@@ -250,6 +251,12 @@ export function BlogIndex() {
                   </div>
                 ) : null}
 
+                {isMobile ? (
+                  <div className="mt-3">
+                    <BlogAnimeQuickLinks />
+                  </div>
+                ) : null}
+
 	              {loading ? <div className="latest-empty">加载中…</div> : null}
 	              {!loading && posts.length === 0 && pinnedPosts.length === 0 ? (
 	                <div className="latest-empty">暂无文章，去写一篇吧</div>
@@ -326,6 +333,7 @@ export function BlogIndex() {
                     onToggle={onToggleCategory}
                     onReset={onResetCategories}
                   />
+                  <BlogAnimeQuickLinks />
                 </BlogSidebar>
 	            </div>
 	          ) : null}

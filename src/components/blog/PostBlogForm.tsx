@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { MarkdownEditor } from "@/components/markdown/MarkdownEditor";
 import { CategorySelector } from "@/components/blog/CategorySelector";
 import { Plus, X } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
 
@@ -45,16 +46,21 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
   const [categorySelectorOpen, setCategorySelectorOpen] = useState(false);
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverUrl, setCoverUrl] = useState<string | null>(initialData?.coverUrl ?? null);
-  const [coverFilename, setCoverFilename] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [inlineUploadCount, setInlineUploadCount] = useState(0);
+  const [transferring, setTransferring] = useState(false);
+  const [transferOnSubmit, setTransferOnSubmit] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [transferSummary, setTransferSummary] = useState<string | null>(null);
 
   const isEditMode = Boolean(initialData?.id);
 
+  const inlineUploading = inlineUploadCount > 0;
+
   const canSubmit = useMemo(() => {
-    return title.trim() && selectedCategories.length > 0 && content.trim() && !submitting;
-  }, [title, selectedCategories, content, submitting]);
+    return title.trim() && selectedCategories.length > 0 && content.trim() && !submitting && !transferring && !inlineUploading;
+  }, [title, selectedCategories, content, submitting, transferring, inlineUploading]);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
@@ -70,7 +76,14 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
     };
   }, []);
 
-  const editorHeight = useMemo(() => (isMobile ? 420 : 620), [isMobile]);
+  const coverPreviewUrl = useMemo(() => {
+    if (!coverUrl) return null;
+    const value = coverUrl.trim();
+    if (!value) return null;
+    if (value.startsWith("http://") || value.startsWith("https://")) return value;
+    if (value.startsWith("/")) return value;
+    return `/uploads/images/news/${value}`;
+  }, [coverUrl]);
 
   const uploadCover = async (file: File) => {
     setUploading(true);
@@ -78,18 +91,87 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/upload?folder=news", {
+      const res = await fetch("/api/pixhost/upload", {
         method: "POST",
         body: form,
       });
-      const json = await res.json();
-      if (!res.ok || json?.errno !== 0) throw new Error(json?.message || "UPLOAD_FAILED");
-      setCoverUrl(json.data.url);
-      setCoverFilename((json?.data?.filename ?? json?.data?.href) || null);
+      const json = (await res.json().catch(() => null)) as ApiResponse<{ url?: string }> | null;
+      if (res.status === 401) {
+        router.push("/login");
+        return;
+      }
+      const url = json?.data?.url;
+      if (!res.ok || !json?.ok || typeof url !== "string" || !url.trim()) {
+        throw new Error(json?.message || "UPLOAD_FAILED");
+      }
+      setCoverUrl(url.trim());
     } catch {
       setError("封面上传失败");
     } finally {
       setUploading(false);
+    }
+  };
+
+  const transferContentImages = async (input: string) => {
+    setTransferring(true);
+    setTransferSummary(null);
+    setError(null);
+    try {
+      const res = await fetch("/api/pixhost/transfer", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ content: input }),
+      });
+      const json = (await res.json().catch(() => null)) as ApiResponse<{
+        content?: string;
+        replaced?: number;
+        skipped?: number;
+        failed?: number;
+      }> | null;
+      if (res.status === 401) {
+        router.push("/login");
+        return null;
+      }
+      if (!res.ok || !json?.ok) throw new Error(json?.message || "TRANSFER_FAILED");
+      const next = typeof json.data?.content === "string" ? json.data.content : input;
+      const replaced = Number(json.data?.replaced ?? 0);
+      const skipped = Number(json.data?.skipped ?? 0);
+      const failed = Number(json.data?.failed ?? 0);
+      setTransferSummary(`已转存 ${replaced} 张，跳过 ${skipped} 张，失败 ${failed} 张`);
+      return next;
+    } catch {
+      setError("图片转存失败");
+      return null;
+    } finally {
+      setTransferring(false);
+    }
+  };
+
+  const uploadInlineImage = async (file: File) => {
+    setInlineUploadCount((prev) => prev + 1);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/pixhost/upload", {
+        method: "POST",
+        body: form,
+      });
+      const json = (await res.json().catch(() => null)) as ApiResponse<{ url?: string }> | null;
+      if (res.status === 401) {
+        router.push("/login");
+        return null;
+      }
+      const url = json?.data?.url;
+      if (!res.ok || !json?.ok || typeof url !== "string" || !url.trim()) {
+        throw new Error(json?.message || "UPLOAD_FAILED");
+      }
+      return url.trim();
+    } catch {
+      setError("图片上传失败");
+      return null;
+    } finally {
+      setInlineUploadCount((prev) => Math.max(0, prev - 1));
     }
   };
 
@@ -98,13 +180,21 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
     setSubmitting(true);
     setError(null);
     try {
+      let normalizedContent = content;
+      if (transferOnSubmit) {
+        const transferred = await transferContentImages(content);
+        if (typeof transferred !== "string") return;
+        normalizedContent = transferred;
+        setContent(transferred);
+      }
+
       const method = isEditMode ? "PUT" : "POST";
       const body = {
         ...(isEditMode ? { id: initialData!.id } : {}),
         title,
         category: selectedCategories.join(","),
-        content,
-        coverUrl: coverFilename || (isEditMode ? initialData!.coverUrl : null),
+        content: normalizedContent,
+        coverUrl,
       };
       const res = await fetch("/api/blog", {
         method,
@@ -193,20 +283,19 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
                   }}
                 />
               </div>
-              {coverUrl ? (
+              {coverPreviewUrl ? (
                 <>
                   <Button
                     variant="secondary"
                     onClick={() => {
                       setCoverUrl(null);
-                      setCoverFilename(null);
                     }}
                     type="button"
                   >
                     移除
                   </Button>
                   <div className="overflow-hidden rounded-xl border bg-muted sm:w-24 sm:h-24 w-full h-24 shrink-0">
-                    <img src={coverUrl} alt="" className="h-full w-full object-cover" />
+                    <img src={coverPreviewUrl} alt="" className="h-full w-full object-cover" />
                   </div>
                 </>
               ) : null}
@@ -215,7 +304,33 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
         </div>
 
         <div className="flex-1 min-h-0 space-y-2 flex flex-col">
-          <Label>内容（Markdown）</Label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Label>内容（Markdown）</Label>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 rounded-md border px-3 py-1.5">
+                <Label className="text-xs text-muted-foreground">发布前转存图片</Label>
+                <Switch checked={transferOnSubmit} onCheckedChange={setTransferOnSubmit} />
+              </div>
+              {inlineUploading ? (
+                <span className="text-xs text-muted-foreground">图片上传中...</span>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={!content.trim() || transferring || submitting}
+                onClick={async () => {
+                  const transferred = await transferContentImages(content);
+                  if (typeof transferred === "string") setContent(transferred);
+                }}
+              >
+                {transferring ? "转存中..." : "转存图片"}
+              </Button>
+            </div>
+          </div>
+          {transferSummary ? (
+            <div className="text-xs text-muted-foreground">{transferSummary}</div>
+          ) : null}
           <div className="flex-1 min-h-0">
             <MarkdownEditor
               value={content}
@@ -224,6 +339,7 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
               preview={isMobile ? "edit" : "live"}
               placeholder="把灵感放进时光胶囊，分享给更多人。"
               autoHeight
+              uploadImage={uploadInlineImage}
             />
           </div>
         </div>

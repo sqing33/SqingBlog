@@ -30,7 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="conta">
-      {!isAdminRoute && !isLoginRoute && <BlogTitleWordBackground />}
+      {!isAdminRoute && <BlogTitleWordBackground />}
       <div
         ref={scrollRef}
         className={cn(
