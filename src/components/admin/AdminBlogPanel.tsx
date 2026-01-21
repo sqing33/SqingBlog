@@ -15,6 +15,8 @@ type BlogRow = {
   create_time: string;
   nickname: string;
   coverUrl: string | null;
+  isPinned?: boolean;
+  pinnedTime?: string | null;
 };
 
 type SortKey = keyof Pick<
@@ -58,7 +60,9 @@ export function AdminBlogPanel() {
       const res = await fetch(api.toString(), { cache: "no-store" });
       const json = await res.json();
       if (!res.ok || !json?.ok) throw new Error("LOAD_FAILED");
-      setItems(json.data.blogArr || []);
+      const pinnedArr = Array.isArray(json?.data?.pinnedArr) ? json.data.pinnedArr : [];
+      const blogArr = Array.isArray(json?.data?.blogArr) ? json.data.blogArr : [];
+      setItems([...pinnedArr, ...blogArr]);
     } catch {
       setItems([]);
     } finally {
@@ -165,6 +169,25 @@ export function AdminBlogPanel() {
       await load(keyword);
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const togglePinned = async (id: string, nextPinned: boolean) => {
+    try {
+      const res = await fetch(`/api/admin/blog/${id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pinned: nextPinned }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.status === 401) {
+        router.push("/admin/login");
+        return;
+      }
+      if (!res.ok || !json?.ok) throw new Error("PIN_FAILED");
+      await load(keyword);
+    } catch {
+      alert(nextPinned ? "置顶失败" : "取消置顶失败");
     }
   };
 
@@ -278,6 +301,7 @@ export function AdminBlogPanel() {
                     <th className="py-2 pr-2">
                       <SortHeader label="作者" k="nickname" />
                     </th>
+                    <th className="py-2 pr-2">置顶</th>
                     <th className="py-2 pr-2">
                       <SortHeader label="发布时间" k="create_time" />
                     </th>
@@ -301,6 +325,23 @@ export function AdminBlogPanel() {
                         <Badge variant="secondary">{b.category}</Badge>
                       </td>
                       <td className="py-2 pr-2">{b.nickname}</td>
+                      <td className="py-2 pr-2">
+                        <div className="flex items-center gap-2">
+                          {b.isPinned ? (
+                            <Badge variant="secondary">置顶</Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
+                          <Button
+                            size="sm"
+                            variant={b.isPinned ? "secondary" : "outline"}
+                            onClick={() => togglePinned(b.id, !b.isPinned)}
+                            type="button"
+                          >
+                            {b.isPinned ? "取消置顶" : "置顶"}
+                          </Button>
+                        </div>
+                      </td>
                       <td className="py-2 pr-2">{b.create_time}</td>
                       <td className="py-2 pr-2">
                         <Button
@@ -318,7 +359,7 @@ export function AdminBlogPanel() {
                     <tr>
                       <td
                         className="py-6 text-center text-sm text-muted-foreground"
-                        colSpan={7}
+                        colSpan={8}
                       >
                         暂无数据
                       </td>

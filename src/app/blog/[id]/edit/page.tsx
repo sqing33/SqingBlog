@@ -10,7 +10,6 @@ type BlogRow = {
   title: string;
   content: string;
   coverUrl: string | null;
-  layoutType: string | null;
 };
 
 export default async function BlogEditPage({
@@ -29,7 +28,7 @@ export default async function BlogEditPage({
   }
 
   const rows = await mysqlQuery<BlogRow>(
-    "SELECT b.id, b.title, b.content, b.coverUrl, b.layoutType, ub.user_id FROM blog b JOIN user_blog ub ON b.id = ub.blog_id WHERE b.id = ? LIMIT 1",
+    "SELECT b.id, b.title, b.content, b.coverUrl, ub.user_id FROM blog b JOIN user_blog ub ON b.id = ub.blog_id WHERE b.id = ? LIMIT 1",
     [id]
   );
   if (!rows.length) return notFound();
@@ -52,7 +51,6 @@ export default async function BlogEditPage({
     content: row.content,
     category: categories,
     coverUrl: row.coverUrl,
-    layoutType: row.layoutType,
   };
 
   return <PostBlogForm initialData={initialData} />;

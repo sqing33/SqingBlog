@@ -16,7 +16,8 @@ type BlogRow = {
   content: string;
   create_time: string;
   coverUrl: string | null;
-  layoutType: string | null;
+  is_pinned: number;
+  pinned_time: string | null;
   user_id: string;
   username: string;
   nickname: string;
@@ -84,12 +85,19 @@ export async function GET(req: NextRequest) {
   const { whereSql, sqlParams } = buildWhere({ category, keyword, date });
 
   const baseQuery = `
-    SELECT b.id, b.title, b.content, b.create_time, b.coverUrl, b.layoutType,
+    SELECT b.id, b.title, b.content, b.create_time, b.coverUrl, b.is_pinned, b.pinned_time,
            u.id AS user_id, u.username, u.nickname, u.avatarUrl
     FROM blog b
     JOIN user_blog ub ON b.id = ub.blog_id
     JOIN users u ON ub.user_id = u.id
   `;
+
+  const pinnedWhereSql = whereSql
+    ? `${whereSql} AND b.is_pinned = 1`
+    : " WHERE b.is_pinned = 1";
+  const normalWhereSql = whereSql
+    ? `${whereSql} AND b.is_pinned = 0`
+    : " WHERE b.is_pinned = 0";
 
   const limitSql = pageSize === null ? "" : " LIMIT ?, ?";
   const offset = pageSize === null ? 0 : (page - 1) * pageSize;
@@ -97,19 +105,26 @@ export async function GET(req: NextRequest) {
     pageSize === null ? sqlParams : [...sqlParams, offset, pageSize];
 
   try {
+    const pinnedArr = await mysqlQuery<BlogRow>(
+      `${baseQuery}${pinnedWhereSql} ORDER BY b.pinned_time DESC, b.create_time DESC`,
+      sqlParams
+    );
+
     const blogArr = await mysqlQuery<BlogRow>(
-      `${baseQuery}${whereSql} ORDER BY b.create_time DESC${limitSql}`,
+      `${baseQuery}${normalWhereSql} ORDER BY b.create_time DESC${limitSql}`,
       queryParams
     );
 
     const countRows = await mysqlQuery<{ total: number }>(
-      `SELECT COUNT(DISTINCT b.id) AS total FROM blog b${whereSql}`,
+      `SELECT COUNT(DISTINCT b.id) AS total FROM blog b${normalWhereSql}`,
       sqlParams
     );
 
     const total = countRows?.[0]?.total ?? blogArr.length;
 
-    const blogIds = blogArr.map((row) => row.id);
+    const blogIds = Array.from(
+      new Set([...pinnedArr, ...blogArr].map((row) => row.id))
+    );
     const categoryRelations = blogIds.length > 0
       ? await mysqlQuery<{ blog_id: string; category_name: string }>(
           `SELECT blog_id, category_name FROM blog_category_relation WHERE blog_id IN (${blogIds.map(() => "?").join(",")})`,
@@ -124,19 +139,33 @@ export async function GET(req: NextRequest) {
       categoryMap.set(rel.blog_id, categories);
     }
 
-    const normalized = blogArr.map((row) => {
+    const normalizeRow = (row: BlogRow) => {
       const categories = categoryMap.get(row.id) || [];
-      return {
-        ...row,
-        id: String(row.id),
-        user_id: String(row.user_id),
-        category: categories.join(","),
-        coverUrl: resolveUploadImageUrl(row.coverUrl, "news"),
-        avatarUrl: resolveUploadImageUrl(row.avatarUrl, "avatars"),
-      };
-    });
+      const {
+        avatarUrl,
+        coverUrl,
+        is_pinned,
+        pinned_time,
+        ...rest
+      } = row;
 
-    return ok({ blogArr: normalized, total });
+      return {
+        ...rest,
+        id: String(rest.id),
+        user_id: String(rest.user_id),
+        category: categories.join(","),
+        coverUrl: resolveUploadImageUrl(coverUrl, "news"),
+        avatarUrl: resolveUploadImageUrl(avatarUrl, "avatars"),
+        isPinned: Boolean(is_pinned),
+        pinnedTime: pinned_time,
+      };
+    };
+
+    return ok({
+      pinnedArr: pinnedArr.map(normalizeRow),
+      blogArr: blogArr.map(normalizeRow),
+      total,
+    });
   } catch (err) {
     return fail("查询失败", { status: 500, code: "DB_ERROR" });
   }
@@ -147,7 +176,6 @@ const createSchema = z.object({
   content: z.string().min(1),
   category: z.string().min(1).max(255),
   coverUrl: z.string().optional().nullable(),
-  layoutType: z.string().optional().nullable(),
 });
 
 export async function POST(req: NextRequest) {
@@ -168,12 +196,11 @@ export async function POST(req: NextRequest) {
     });
   }
 
-  const { title, content, category, coverUrl, layoutType } = parsed.data;
+  const { title, content, category, coverUrl } = parsed.data;
   const idGen = new SnowflakeId({ WorkerId: 1 });
   const id = idGen.nextString();
   const createTime = toMySqlDateTime();
   const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
-  const normalizedLayout = (layoutType || "").trim() || null;
 
   const categories = category
     .split(",")
@@ -193,8 +220,8 @@ export async function POST(req: NextRequest) {
     }
 
     await mysqlExec(
-      "INSERT INTO blog (id, title, content, coverUrl, layoutType, create_time) VALUES (?,?,?,?,?,?)",
-      [id, title, content, normalizedCover, normalizedLayout, createTime]
+      "INSERT INTO blog (id, title, content, coverUrl, create_time) VALUES (?,?,?,?,?)",
+      [id, title, content, normalizedCover, createTime]
     );
     await mysqlExec("INSERT INTO user_blog (user_id, blog_id) VALUES (?,?)", [
       payload.sub,
@@ -213,7 +240,6 @@ const updateSchema = z.object({
   content: z.string().min(1),
   category: z.string().min(1).max(255),
   coverUrl: z.string().optional().nullable(),
-  layoutType: z.string().optional().nullable(),
 });
 
 export async function PUT(req: NextRequest) {
@@ -234,7 +260,7 @@ export async function PUT(req: NextRequest) {
     });
   }
 
-  const { id, title, content, category, coverUrl, layoutType } = parsed.data;
+  const { id, title, content, category, coverUrl } = parsed.data;
 
   try {
     const ownershipRows = await mysqlQuery<{ user_id: string }>(
@@ -253,7 +279,6 @@ export async function PUT(req: NextRequest) {
 
     const updateTime = toMySqlDateTime();
     const normalizedCover = coverUrl ? extractUploadFilename(coverUrl) : null;
-    const normalizedLayout = (layoutType || "").trim() || null;
 
     const categories = category
       .split(",")
@@ -277,8 +302,8 @@ export async function PUT(req: NextRequest) {
     }
 
     await mysqlExec(
-      "UPDATE blog SET title = ?, content = ?, coverUrl = ?, layoutType = ? WHERE id = ?",
-      [title, content, normalizedCover, normalizedLayout, id]
+      "UPDATE blog SET title = ?, content = ?, coverUrl = ? WHERE id = ?",
+      [title, content, normalizedCover, id]
     );
 
     return ok({ id }, { status: 200, message: "更新成功" });

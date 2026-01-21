@@ -1,5 +1,7 @@
 "use client";
 
+import { Filter, RotateCcw } from "lucide-react";
+
 type CategoryOption = { label: string; value: string };
 
 export function BlogCategoryFilter({
@@ -14,49 +16,61 @@ export function BlogCategoryFilter({
   onReset: () => void;
 }) {
   const selectable = categories.filter((c) => c.value !== "0");
+  const selectedCount = selected.length;
 
   return (
     <section className="panel panel--aside aside-filter glass-card" aria-label="分类筛选">
-      <div className="panel__header">
-        <h3 className="panel__title">分类筛选</h3>
-        <span className="panel__hint">可多选</span>
+      <div className="aside-filter__header">
+        <div className="aside-filter__title">
+          <span className="aside-filter__icon" aria-hidden="true">
+            <Filter />
+          </span>
+          <h3 className="aside-filter__title-text">分类筛选</h3>
+        </div>
+
+        <div className="aside-filter__actions">
+          <span className="aside-filter__hint">可多选</span>
+          <button
+            type="button"
+            className="aside-filter__reset"
+            onClick={onReset}
+            disabled={selectedCount === 0}
+            title={selectedCount ? `清空已选（${selectedCount}）` : "已是全部"}
+          >
+            <RotateCcw />
+            <span>重置</span>
+          </button>
+        </div>
       </div>
 
       <div className="filter-card__categories">
-        <div
+        <button
+          type="button"
           className={[
-            "filter-category-item",
-            selected.length === 0 ? "filter-category-item--active" : "",
+            "category-tag",
+            selected.length === 0 ? "category-tag--active" : "",
           ].join(" ")}
           onClick={onReset}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") onReset();
-          }}
+          aria-pressed={selected.length === 0}
         >
           全部
-        </div>
+        </button>
         {selectable.map((cat) => (
-          <div
+          <button
+            type="button"
             key={cat.value}
             className={[
-              "filter-category-item",
-              selected.includes(cat.value) ? "filter-category-item--active" : "",
+              "category-tag",
+              selected.includes(cat.value) ? "category-tag--active" : "",
             ].join(" ")}
             onClick={() => onToggle(cat.value)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") onToggle(cat.value);
-            }}
             title={cat.label}
+            aria-pressed={selected.includes(cat.value)}
           >
             {cat.label}
-          </div>
+          </button>
         ))}
       </div>
     </section>
   );
 }
-

@@ -289,6 +289,16 @@ h6 {
   scrollbar-gutter: stable;
 }
 
+.home-snap-scroll {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
+.home-snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 .login-page {
   overflow: hidden;
 }

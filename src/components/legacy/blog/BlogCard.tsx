@@ -10,7 +10,7 @@ export type BlogCardPost = {
   create_time?: string | null;
   readingMinutes?: number | null;
   nickname?: string | null;
-  layoutType?: "hero" | "standard" | "large" | string | null;
+  isPinned?: boolean | null;
 };
 
 function tagClassForCategory(rawCategory?: string | null) {
@@ -36,8 +36,9 @@ export function BlogCard({
   post: BlogCardPost;
   onClick?: () => void;
 }) {
-  const isHero = post.layoutType === "hero" || post.layoutType === "large";
+  const isPinned = Boolean(post.isPinned);
   const hasCover = !!post.coverUrl;
+  const showMedia = hasCover || isPinned;
   const coverSrc = post.coverUrl || "";
   const authorAvatar = post.avatarUrl || "/assets/avatar.png";
   const categories = post.category
@@ -48,8 +49,8 @@ export function BlogCard({
     <article
       className={cn(
         "blog-card",
-        isHero ? "blog-card--hero" : "blog-card--standard",
-        !hasCover && "blog-card--no-cover"
+        isPinned ? "blog-card--pinned" : "blog-card--standard",
+        !hasCover && !isPinned && "blog-card--no-cover"
       )}
       onClick={onClick}
       role={onClick ? "button" : undefined}
@@ -59,11 +60,15 @@ export function BlogCard({
         if (e.key === "Enter" || e.key === " ") onClick();
       }}
     >
-      {hasCover && (
+      {showMedia && (
         <div className="card-media">
           <div className="media-inner">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={coverSrc} alt={post.title} className="card-image" />
+            {hasCover ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverSrc} alt={post.title} className="card-image" />
+            ) : (
+              <div className="card-image card-image--placeholder" aria-hidden="true" />
+            )}
             <div className="card-tags">
               {categories.length > 0 ? (
                 categories.map((cat) => (
@@ -79,10 +84,12 @@ export function BlogCard({
 
       <div className="card-content">
         <h3 className="content-title">{post.title}</h3>
-        {!hasCover && <p className="content-excerpt">{post.excerpt}</p>}
+        {(isPinned || !hasCover) && (
+          <p className="content-excerpt">{post.excerpt}</p>
+        )}
 
-        <div className={cn("content-footer", isHero && "content-footer--hero")}>
-          {isHero ? (
+        <div className={cn("content-footer", isPinned && "content-footer--pinned")}>
+          {isPinned ? (
             <>
               <div className="author-inline">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -126,4 +133,3 @@ export function BlogCard({
     </article>
   );
 }
-

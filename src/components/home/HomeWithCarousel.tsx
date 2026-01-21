@@ -65,6 +65,11 @@ export function HomeWithCarousel() {
     ) as HTMLDivElement | null;
     if (!el) return;
     scrollElRef.current = el;
+
+    el.classList.add("home-snap-scroll");
+    return () => {
+      el.classList.remove("home-snap-scroll");
+    };
   }, []);
 
   useEffect(() => {
@@ -169,7 +174,7 @@ export function HomeWithCarousel() {
       <section
         ref={heroRef}
         aria-label="首页拼图"
-        className="grid h-[100svh] w-full grid-cols-6 grid-rows-3 bg-transparent"
+        className="home-snap-section grid h-[100svh] w-full grid-cols-6 grid-rows-3 bg-transparent"
       >
         <div className="col-span-3 col-start-4 row-span-3 row-start-1 flex items-center justify-center p-10">
           <div className="flex flex-col items-center gap-4">
@@ -267,7 +272,11 @@ export function HomeWithCarousel() {
         ))}
       </section>
 
-      <section ref={blogRef} aria-label="博客内容">
+      <section
+        ref={blogRef}
+        aria-label="博客内容"
+        className="home-snap-section min-h-[100svh]"
+      >
         <BlogIndex />
       </section>
 

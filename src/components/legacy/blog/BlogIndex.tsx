@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { BlogSidebar } from "@/components/legacy/blog/BlogSidebar";
@@ -18,11 +18,13 @@ type BlogApiItem = {
   create_time: string;
   category?: string | null;
   nickname?: string | null;
-  layoutType?: string | null;
+  isPinned?: boolean;
+  pinnedTime?: string | null;
 };
 
 type BlogListResponse = {
   blogArr: BlogApiItem[];
+  pinnedArr?: BlogApiItem[];
   total: number;
 };
 
@@ -99,6 +101,7 @@ export function BlogIndex() {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(8);
   const [posts, setPosts] = useState<BlogCardPost[]>([]);
+  const [pinnedPosts, setPinnedPosts] = useState<BlogCardPost[]>([]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize]);
 
@@ -130,12 +133,12 @@ export function BlogIndex() {
       const res = await fetch(url.toString(), { cache: "no-store" });
       const json = (await res.json()) as ApiResponse<BlogListResponse>;
       if (!res.ok || !json?.ok) throw new Error(json?.message || "API_ERROR");
+      const pinnedList = Array.isArray(json?.data?.pinnedArr) ? json.data.pinnedArr : [];
       const list = Array.isArray(json?.data?.blogArr) ? json.data.blogArr : [];
 
-      const mapped: BlogCardPost[] = list.map((raw, idx) => ({
+      const mapItem = (raw: BlogApiItem): BlogCardPost => ({
         id: String(raw.id),
         title: raw.title,
-        content: raw.content,
         coverUrl: raw.coverUrl,
         avatarUrl: raw.avatarUrl,
         category: raw.category ?? "",
@@ -143,14 +146,15 @@ export function BlogIndex() {
         create_time: raw.create_time,
         excerpt: buildExcerpt(raw.content),
         readingMinutes: estimateReadingMinutes(raw.content),
-        // Keep the legacy behavior: first card is hero when backend doesn't provide layoutType.
-        layoutType: raw.layoutType ? raw.layoutType : idx === 0 ? "hero" : "standard",
-      }));
+        isPinned: Boolean(raw.isPinned),
+      });
 
-      setPosts(mapped);
-      setTotal(json?.data?.total ?? mapped.length);
+      setPinnedPosts(pinnedList.map(mapItem));
+      setPosts(list.map(mapItem));
+      setTotal(json?.data?.total ?? list.length);
     } catch {
       setPosts([]);
+      setPinnedPosts([]);
       setTotal(0);
     } finally {
       setLoading(false);
@@ -247,9 +251,17 @@ export function BlogIndex() {
                 ) : null}
 
 	              {loading ? <div className="latest-empty">加载中…</div> : null}
-	              {!loading && posts.length === 0 ? (
+	              {!loading && posts.length === 0 && pinnedPosts.length === 0 ? (
 	                <div className="latest-empty">暂无文章，去写一篇吧</div>
 	              ) : null}
+
+              {!loading && pinnedPosts.length ? (
+                <div className="pinned-list">
+                  {pinnedPosts.map((post) => (
+                    <BlogCard key={post.id} post={post} onClick={() => goToPost(post.id)} />
+                  ))}
+                </div>
+              ) : null}
 
               {!loading && posts.length ? (
                 <div className="post-grid-container">

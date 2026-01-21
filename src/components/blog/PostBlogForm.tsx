@@ -7,13 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { MarkdownEditor } from "@/components/markdown/MarkdownEditor";
 import { CategorySelector } from "@/components/blog/CategorySelector";
@@ -29,7 +22,6 @@ type BlogInitialData = {
   content: string;
   category: string;
   coverUrl: string | null;
-  layoutType: string | null;
 };
 
 const fallbackCategories: CategoryOption[] = [
@@ -37,11 +29,6 @@ const fallbackCategories: CategoryOption[] = [
   { label: "娱乐", value: "娱乐" },
   { label: "杂谈", value: "杂谈" },
 ];
-
-const layoutOptions = [
-  { label: "小卡片（两列）", value: "standard" },
-  { label: "大卡片（一行一张）", value: "large" },
-] as const;
 
 type PostBlogFormProps = {
   initialData?: BlogInitialData | null;
@@ -56,9 +43,6 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
     initialData?.category ? initialData.category.split(",").map((c) => c.trim()).filter(Boolean) : [fallbackCategories[0]?.value ?? "分享"]
   );
   const [categorySelectorOpen, setCategorySelectorOpen] = useState(false);
-  const [layoutType, setLayoutType] = useState<(typeof layoutOptions)[number]["value"]>(
-    (initialData?.layoutType as (typeof layoutOptions)[number]["value"]) ?? "standard"
-  );
   const [content, setContent] = useState(initialData?.content ?? "");
   const [coverUrl, setCoverUrl] = useState<string | null>(initialData?.coverUrl ?? null);
   const [coverFilename, setCoverFilename] = useState<string | null>(null);
@@ -121,7 +105,6 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
         category: selectedCategories.join(","),
         content,
         coverUrl: coverFilename || (isEditMode ? initialData!.coverUrl : null),
-        layoutType,
       };
       const res = await fetch("/api/blog", {
         method,
@@ -165,57 +148,34 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:col-span-1">
-            <div className="min-w-0 space-y-2">
-              <Label>类型</Label>
-              <div className="flex min-h-[42px] flex-wrap gap-2 rounded-md border p-2">
-                {selectedCategories.length === 0 ? (
-                  <span className="text-muted-foreground text-sm">暂未选择类型</span>
-                ) : (
-                  selectedCategories.map((cat) => (
-                    <Badge key={cat} variant="secondary" className="gap-1 pr-1">
-                      {cat}
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCategories(selectedCategories.filter((c) => c !== cat))}
-                        className="hover:bg-accent/50 rounded-sm p-0.5"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-7 px-2"
-                  onClick={() => setCategorySelectorOpen(true)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="min-w-0 space-y-2">
-              <Label>列表卡片</Label>
-              <Select
-                value={layoutType}
-                onValueChange={(v) =>
-                  setLayoutType(v as (typeof layoutOptions)[number]["value"])
-                }
+          <div className="space-y-2 lg:col-span-1">
+            <Label>类型</Label>
+            <div className="flex min-h-[42px] flex-wrap gap-2 rounded-md border p-2">
+              {selectedCategories.length === 0 ? (
+                <span className="text-muted-foreground text-sm">暂未选择类型</span>
+              ) : (
+                selectedCategories.map((cat) => (
+                  <Badge key={cat} variant="secondary" className="gap-1 pr-1">
+                    {cat}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories(selectedCategories.filter((c) => c !== cat))}
+                      className="hover:bg-accent/50 rounded-sm p-0.5"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2"
+                onClick={() => setCategorySelectorOpen(true)}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择卡片大小" />
-                </SelectTrigger>
-                <SelectContent>
-                  {layoutOptions.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Plus className="h-3 w-3" />
+              </Button>
             </div>
           </div>
 

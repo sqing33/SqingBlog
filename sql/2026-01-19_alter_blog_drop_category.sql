@@ -1,1 +1,1 @@
-ALTER TABLE `blog` DROP COLUMN IF EXISTS `category`;
+ALTER TABLE `blog` DROP COLUMN `category`;
