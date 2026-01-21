@@ -2,6 +2,17 @@ import { fail, ok } from "@/lib/api/response";
 
 export const runtime = "nodejs";
 
+function secondsUntilNextCstMidnight(nowMs = Date.now()) {
+  const offsetMs = 8 * 60 * 60 * 1000;
+  const local = new Date(nowMs + offsetMs);
+  const y = local.getUTCFullYear();
+  const m = local.getUTCMonth();
+  const d = local.getUTCDate();
+  const nextMidnightUtcMs = Date.UTC(y, m, d + 1) - offsetMs;
+  const seconds = Math.ceil((nextMidnightUtcMs - nowMs) / 1000);
+  return Math.min(86400, Math.max(60, seconds));
+}
+
 type UpstreamTodayInHistory = {
   data?: {
     date?: string;
@@ -19,8 +30,9 @@ type UpstreamTodayInHistory = {
 
 export async function GET() {
   try {
+    const revalidateSeconds = secondsUntilNextCstMidnight();
     const res = await fetch("https://60s.viki.moe/v2/today-in-history", {
-      next: { revalidate: 60 * 60 * 24 },
+      next: { revalidate: revalidateSeconds },
     });
 
     if (!res.ok) {
@@ -49,7 +61,7 @@ export async function GET() {
     });
     response.headers.set(
       "Cache-Control",
-      "public, max-age=0, s-maxage=86400, stale-while-revalidate=3600"
+      `public, max-age=0, s-maxage=${revalidateSeconds}, stale-while-revalidate=600`
     );
     return response;
   } catch (err) {
@@ -60,4 +72,3 @@ export async function GET() {
     });
   }
 }
-

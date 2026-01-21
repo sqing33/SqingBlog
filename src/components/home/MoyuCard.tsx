@@ -1,7 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type MoyuData = {
   date?: {
@@ -70,6 +70,26 @@ function getLocalDayKey() {
   return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
 }
 
+function getLocalMonthDay() {
+  const d = new Date();
+  return { month: d.getMonth() + 1, day: d.getDate() };
+}
+
+function isSameLocalDayByGregorian(gregorian?: string) {
+  const date = String(gregorian ?? "").slice(0, 10);
+  if (!date) return false;
+  return date === getLocalDayKey();
+}
+
+function isSameLocalDayByMonthDay(history?: TodayInHistoryData | null) {
+  if (!history) return false;
+  const { month, day } = getLocalMonthDay();
+  if (typeof history.month === "number" && typeof history.day === "number") {
+    return history.month === month && history.day === day;
+  }
+  return false;
+}
+
 function clampPercent(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.min(100, Math.max(0, Math.round(value)));
@@ -116,28 +136,52 @@ export function MoyuCard() {
   const [history, setHistory] = useState<TodayInHistoryData | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
 
+  const retriedMoyuRef = useRef(false);
+  const retriedHistoryRef = useRef(false);
+
   const loadMoyu = useCallback(
     async (opts?: { signal?: AbortSignal; force?: boolean }) => {
       setMoyuLoading(true);
       setMoyuError(null);
 
       try {
-        const cacheKey = `moyu:${getLocalDayKey()}`;
+        const dayKey = getLocalDayKey();
+        const cacheKey = `moyu:${dayKey}`;
         if (!opts?.force) {
           const cached = localStorage.getItem(cacheKey);
           if (cached) {
-            setMoyu(JSON.parse(cached) as MoyuData);
-            return;
+            const parsed = JSON.parse(cached) as MoyuData;
+            if (isSameLocalDayByGregorian(parsed?.date?.gregorian)) {
+              setMoyu(parsed);
+              return;
+            }
           }
         }
 
-        const res = await fetch("/api/60s/moyu", {
+        const url = `/api/60s/moyu?day=${encodeURIComponent(dayKey)}${
+          opts?.force ? `&t=${Date.now()}` : ""
+        }`;
+        const res = await fetch(url, {
           method: "GET",
+          cache: "no-store",
           signal: opts?.signal,
         });
         if (!res.ok) throw new Error(`请求失败(${res.status})`);
         const json = (await res.json()) as { ok?: boolean; data?: MoyuData };
         if (!json?.ok) throw new Error("返回数据异常");
+
+        const payload = json?.data ?? null;
+        if (payload?.date?.gregorian && !isSameLocalDayByGregorian(payload.date.gregorian)) {
+          if (!opts?.force && !retriedMoyuRef.current) {
+            retriedMoyuRef.current = true;
+            await loadMoyu({ signal: opts?.signal, force: true });
+            return;
+          }
+          // Upstream may lag; don't cache a wrong-day payload to avoid "stuck" display.
+          setMoyu(payload);
+          return;
+        }
+
         setMoyu(json?.data ?? null);
         if (json?.data)
           localStorage.setItem(cacheKey, JSON.stringify(json.data));
@@ -160,13 +204,17 @@ export function MoyuCard() {
         if (!opts?.force) {
           const cached = localStorage.getItem(cacheKey);
           if (cached) {
-            setHistory(JSON.parse(cached) as TodayInHistoryData);
-            return;
+            const parsed = JSON.parse(cached) as TodayInHistoryData;
+            if (isSameLocalDayByMonthDay(parsed)) {
+              setHistory(parsed);
+              return;
+            }
           }
         }
 
         const res = await fetch("/api/60s/today-in-history", {
           method: "GET",
+          cache: "no-store",
           signal: opts?.signal,
         });
         if (!res.ok) throw new Error(`请求失败(${res.status})`);
@@ -175,6 +223,18 @@ export function MoyuCard() {
           data?: TodayInHistoryData;
         };
         if (!json?.ok) throw new Error("返回数据异常");
+
+        const payload = json?.data ?? null;
+        if (payload && !isSameLocalDayByMonthDay(payload)) {
+          if (!opts?.force && !retriedHistoryRef.current) {
+            retriedHistoryRef.current = true;
+            await loadHistory({ signal: opts?.signal, force: true });
+            return;
+          }
+          setHistory(payload);
+          return;
+        }
+
         setHistory(json?.data ?? null);
         if (json?.data)
           localStorage.setItem(cacheKey, JSON.stringify(json.data));

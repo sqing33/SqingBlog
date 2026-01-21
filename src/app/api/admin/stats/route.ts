@@ -52,6 +52,33 @@ function rowsToMap(rows: DateCountRow[]) {
   return map;
 }
 
+async function getBlogCategoryStats(): Promise<BlogCategoryRow[]> {
+  try {
+    const rows = await mysqlQuery<BlogCategoryRow>(
+      "SELECT category_name AS category, COUNT(DISTINCT blog_id) AS total FROM blog_category_relation GROUP BY category_name ORDER BY total DESC LIMIT 12"
+    );
+
+    const uncategorized = await mysqlQuery<CountRow>(
+      "SELECT COUNT(*) AS total FROM blog b WHERE NOT EXISTS (SELECT 1 FROM blog_category_relation r WHERE r.blog_id = b.id)"
+    );
+
+    const uncategorizedTotal = Number(uncategorized?.[0]?.total) || 0;
+    if (uncategorizedTotal > 0) {
+      return [...rows, { category: null, total: uncategorizedTotal }]
+        .sort((a, b) => (Number(b.total) || 0) - (Number(a.total) || 0))
+        .slice(0, 12);
+    }
+
+    return rows;
+  } catch (error) {
+    // Backward compatibility for databases that still have `blog.category`.
+    console.error("[api/admin/stats] blog_category_relation query failed, fallback to blog.category", error);
+    return mysqlQuery<BlogCategoryRow>(
+      "SELECT category, COUNT(*) AS total FROM blog GROUP BY category ORDER BY total DESC LIMIT 12"
+    );
+  }
+}
+
 export async function GET(req: NextRequest) {
   try {
     requireSession(req, "admin");
@@ -107,9 +134,7 @@ export async function GET(req: NextRequest) {
     };
 
     const [blogCategories, newsStates] = await Promise.all([
-      mysqlQuery<BlogCategoryRow>(
-        "SELECT category, COUNT(*) AS total FROM blog GROUP BY category ORDER BY total DESC LIMIT 12"
-      ),
+      getBlogCategoryStats(),
       mysqlQuery<NewsStateRow>(
         "SELECT state, COUNT(*) AS total FROM news GROUP BY state ORDER BY total DESC"
       ),

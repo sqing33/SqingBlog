@@ -29,6 +29,7 @@ type CommentNode = {
   pid: string | null;
   pname: string | null;
   like: number;
+  likedByMe?: boolean;
   children?: CommentNode[];
 };
 
@@ -52,6 +53,7 @@ function ReplyItem({
   rootFloor,
   replyFloor,
   replyTargetFloor,
+  likePendingIds,
   onLike,
   onReply,
 }: {
@@ -59,11 +61,13 @@ function ReplyItem({
   rootFloor: number;
   replyFloor: number;
   replyTargetFloor: string | null;
+  likePendingIds: Set<string>;
   onLike: (id: string) => void;
   onReply: (pid: string, pname: string) => void;
 }) {
   const avatarSrc = node.avatarUrl || "/assets/avatar.png";
   const floorLabel = `${rootFloor}-${replyFloor}楼`;
+  const likePending = likePendingIds.has(node.id);
 
   return (
     <div className="rounded-lg border bg-background/60 p-3">
@@ -95,9 +99,14 @@ function ReplyItem({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
-            <Button size="sm" variant="secondary" onClick={() => onLike(node.id)}>
+            <Button
+              size="sm"
+              variant={node.likedByMe ? "default" : "secondary"}
+              disabled={likePending}
+              onClick={() => onLike(node.id)}
+            >
               <ThumbsUp className="mr-1 size-4" />
-              点赞 {node.like ? `(${node.like})` : ""}
+              {node.likedByMe ? "已赞" : "点赞"} {node.like ? `(${node.like})` : ""}
             </Button>
             <Button size="sm" variant="outline" onClick={() => onReply(node.id, node.nickname)}>
               <ReplyIcon className="mr-1 size-4" />
@@ -113,11 +122,13 @@ function ReplyItem({
 function RootComment({
   node,
   floor,
+  likePendingIds,
   onLike,
   onReply,
 }: {
   node: CommentNode;
   floor: number;
+  likePendingIds: Set<string>;
   onLike: (id: string) => void;
   onReply: (pid: string, pname: string) => void;
 }) {
@@ -125,6 +136,7 @@ function RootComment({
   const [page, setPage] = useState(1);
 
   const avatarSrc = node.avatarUrl || "/assets/avatar.png";
+  const likePending = likePendingIds.has(node.id);
   const children = useMemo(() => {
     const list = (node.children || []).slice();
     list.sort((a, b) => String(a.create_time).localeCompare(String(b.create_time)));
@@ -197,9 +209,14 @@ function RootComment({
               )}
 
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button size="sm" variant="secondary" onClick={() => onLike(node.id)}>
+                <Button
+                  size="sm"
+                  variant={node.likedByMe ? "default" : "secondary"}
+                  disabled={likePending}
+                  onClick={() => onLike(node.id)}
+                >
                   <ThumbsUp className="mr-1 size-4" />
-                  点赞 {node.like ? `(${node.like})` : ""}
+                  {node.likedByMe ? "已赞" : "点赞"} {node.like ? `(${node.like})` : ""}
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => onReply(node.id, node.nickname)}>
                   <ReplyIcon className="mr-1 size-4" />
@@ -255,6 +272,7 @@ function RootComment({
                   rootFloor={floor}
                   replyFloor={replyIndexById.get(String(child.id)) || 1}
                   replyTargetFloor={getReplyTargetFloor(child.pid)}
+                  likePendingIds={likePendingIds}
                   onLike={onLike}
                   onReply={onReply}
                 />
@@ -277,6 +295,8 @@ export function Comments({
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [likePendingIds, setLikePendingIds] = useState<Set<string>>(() => new Set());
+  const likePendingRef = useRef<Set<string>>(new Set());
   const [comments, setComments] = useState<CommentNode[]>([]);
   const [total, setTotal] = useState(0);
   const [visibleFloors, setVisibleFloors] = useState(10);
@@ -357,16 +377,50 @@ export function Comments({
     }
   };
 
+  const updateCommentLike = (
+    nodes: CommentNode[],
+    commentId: string,
+    patch: { liked: boolean; like: number }
+  ): CommentNode[] => {
+    let changed = false;
+    const next = nodes.map((node) => {
+      if (node.id === commentId) {
+        changed = true;
+        return { ...node, likedByMe: patch.liked, like: patch.like };
+      }
+      if (node.children && node.children.length) {
+        const updatedChildren = updateCommentLike(node.children, commentId, patch);
+        if (updatedChildren !== node.children) {
+          changed = true;
+          return { ...node, children: updatedChildren };
+        }
+      }
+      return node;
+    });
+    return changed ? next : nodes;
+  };
+
   const onLike = async (id: string) => {
+    if (likePendingRef.current.has(id)) return;
+    likePendingRef.current.add(id);
+    setLikePendingIds(new Set(likePendingRef.current));
     try {
       const res = await fetch(`/api/comments/${id}/like`, { method: "POST" });
+      const json = await res.json().catch(() => null);
       if (res.status === 401) {
         router.push("/login");
         return;
       }
-      await load();
+      if (!res.ok || !json?.ok) throw new Error("LIKE_FAILED");
+      const data = json.data as { liked?: boolean; like?: number } | null;
+      const liked = Boolean(data?.liked);
+      const like = Number(data?.like ?? 0);
+      setComments((prev) => updateCommentLike(prev, id, { liked, like }));
     } catch {
       // ignore
+    } finally {
+      likePendingRef.current.delete(id);
+      setLikePendingIds(new Set(likePendingRef.current));
     }
   };
 
@@ -410,7 +464,14 @@ export function Comments({
         ) : (
           <div className="space-y-3">
             {comments.slice(0, visibleFloors).map((c, idx) => (
-              <RootComment key={c.id} node={c} floor={idx + 1} onLike={onLike} onReply={onReply} />
+              <RootComment
+                key={c.id}
+                node={c}
+                floor={idx + 1}
+                likePendingIds={likePendingIds}
+                onLike={onLike}
+                onReply={onReply}
+              />
             ))}
 
             <div ref={loadMoreRef} className="py-2 text-center text-xs text-muted-foreground">

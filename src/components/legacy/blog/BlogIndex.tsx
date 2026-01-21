@@ -297,7 +297,11 @@ export function BlogIndex() {
                       <button
                         key={p}
                         type="button"
-                        className={["user-card__more", p === page ? "bg-black/5" : ""].join(" ")}
+                        className={[
+                          "user-card__more",
+                          p === page ? "user-card__more--active" : "",
+                        ].join(" ")}
+                        aria-current={p === page ? "page" : undefined}
                         onClick={() => {
                           setPage(p);
                           fetchPosts({ page: p });

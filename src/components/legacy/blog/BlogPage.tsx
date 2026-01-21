@@ -90,6 +90,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
   const [toc, setToc] = useState<TocItem[]>([]);
   const [me, setMe] = useState<UserMe | null>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
+  const [collectHint, setCollectHint] = useState<string | null>(null);
   const [collecting, setCollecting] = useState(false);
 
   const readingMinutes = useMemo(() => {
@@ -560,6 +561,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
   const collect = async () => {
     setCollecting(true);
+    setCollectHint(null);
     try {
       const res = await fetch("/api/user/collections", {
         method: "POST",
@@ -572,8 +574,11 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
         return;
       }
       if (!res.ok || !json?.ok) throw new Error("COLLECT_FAILED");
+      setCollectHint(json?.message || "已收藏");
+      window.setTimeout(() => setCollectHint(null), 1500);
     } catch {
-      // ignore
+      setCollectHint("收藏失败");
+      window.setTimeout(() => setCollectHint(null), 1500);
     } finally {
       setCollecting(false);
     }
@@ -701,7 +706,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                       <Star />
                     </div>
                     <span className="blog-action__text">
-                      {collecting ? "收藏中" : "收藏"}
+                      {collectHint || (collecting ? "收藏中" : "收藏")}
                     </span>
                   </button>
 

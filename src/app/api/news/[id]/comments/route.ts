@@ -23,9 +23,10 @@ type CommentRow = {
   like: number;
   category: string;
   bn_id: string;
+  likedByMe?: number;
 };
 
-type CommentNode = CommentRow & { children: CommentNode[] };
+type CommentNode = Omit<CommentRow, "likedByMe"> & { likedByMe: boolean; children: CommentNode[] };
 
 function buildTree(all: CommentRow[]): CommentNode[] {
   // NOTE: The UI only needs 2 levels:
@@ -41,6 +42,7 @@ function buildTree(all: CommentRow[]): CommentNode[] {
     bn_id: String(row.bn_id),
     content: rewriteLegacyAssetHosts(row.content),
     avatarUrl: resolveUploadImageUrl(row.avatarUrl, "avatars"),
+    likedByMe: Boolean(row.likedByMe),
     children: [],
   });
 
@@ -101,17 +103,29 @@ function buildTree(all: CommentRow[]): CommentNode[] {
 }
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   if (!id) return fail("缺少 id", { status: 400, code: "INVALID_INPUT" });
 
   try {
-    const rows = await mysqlQuery<CommentRow>(
-      "SELECT c.*, u.avatarUrl AS avatarUrl FROM comment c LEFT JOIN users u ON c.publisher_id = u.id WHERE c.bn_id = ? AND c.category = 'news' ORDER BY c.create_time ASC",
-      [id]
-    );
+    let session: ReturnType<typeof requireSession> | null = null;
+    try {
+      session = requireSession(req, "user");
+    } catch {
+      session = null;
+    }
+
+    const rows = session
+      ? await mysqlQuery<CommentRow>(
+          "SELECT c.*, u.avatarUrl AS avatarUrl, IF(ucl.user_id IS NULL, 0, 1) AS likedByMe FROM comment c LEFT JOIN users u ON c.publisher_id = u.id LEFT JOIN user_comment_like ucl ON ucl.comment_id = c.id AND ucl.user_id = ? WHERE c.bn_id = ? AND c.category = 'news' ORDER BY c.create_time ASC",
+          [session.sub, id]
+        )
+      : await mysqlQuery<CommentRow>(
+          "SELECT c.*, u.avatarUrl AS avatarUrl FROM comment c LEFT JOIN users u ON c.publisher_id = u.id WHERE c.bn_id = ? AND c.category = 'news' ORDER BY c.create_time ASC",
+          [id]
+        );
 
     const totalRows = await mysqlQuery<{ total: number }>(
       "SELECT COUNT(*) AS total FROM comment WHERE bn_id = ? AND category = 'news'",

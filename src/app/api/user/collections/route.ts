@@ -24,6 +24,15 @@ export async function GET(req: NextRequest) {
     return fail("请先登录", { status: 401, code: "UNAUTHORIZED" });
   }
 
+  const blogId = (req.nextUrl.searchParams.get("blogId") || "").trim();
+  if (blogId) {
+    const exists = await mysqlQuery<{ found: number }>(
+      "SELECT 1 AS found FROM user_blog_collection WHERE user_id = ? AND blog_id = ? LIMIT 1",
+      [session.sub, blogId]
+    );
+    return ok({ collected: exists.length > 0 });
+  }
+
   const rows = await mysqlQuery<CollectionRow>(
     "SELECT b.title, b.coverUrl, ubc.blog_id, ubc.collection_time FROM blog b JOIN user_blog_collection ubc ON b.id = ubc.blog_id WHERE ubc.user_id = ? ORDER BY ubc.collection_time DESC",
     [session.sub]
@@ -63,13 +72,17 @@ export async function POST(req: NextRequest) {
   const createTime = toMySqlDateTime();
 
   try {
-    await mysqlExec(
-      "INSERT INTO user_blog_collection (blog_id, user_id, collection_time) VALUES (?,?,?)",
+    const result = await mysqlExec(
+      "INSERT IGNORE INTO user_blog_collection (blog_id, user_id, collection_time) VALUES (?,?,?)",
       [parsed.data.blogId, session.sub, createTime]
     );
-    return ok(null, { message: "收藏成功", status: 201 });
+
+    const affectedRows = Number((result as { affectedRows?: number | string } | null)?.affectedRows ?? 0);
+    if (affectedRows === 1) {
+      return ok({ collected: true }, { message: "收藏成功", status: 201 });
+    }
+    return ok({ collected: true }, { message: "已收藏" });
   } catch {
-    // Duplicate collection or DB constraint.
-    return ok(null, { message: "已收藏" });
+    return fail("收藏失败", { status: 500, code: "DB_ERROR" });
   }
 }
