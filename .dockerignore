@@ -22,3 +22,4 @@ plan
 # Runtime uploads should be volume-mounted
 public/uploads
 public/uploads/**
+public/fonts/jiyinghuipianheyuan.ttf

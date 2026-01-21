@@ -4,6 +4,8 @@ import { fail, ok } from "@/lib/api/response";
 import { getTokenFromRequest, USER_COOKIE } from "@/lib/auth/session";
 import { verifySessionToken } from "@/lib/auth/jwt";
 import { mysqlQuery } from "@/lib/db/mysql";
+import { rewriteLegacyAssetHosts } from "@/lib/richtext";
+import { resolveUploadImageUrl } from "@/lib/uploads";
 
 export const runtime = "nodejs";
 
@@ -31,9 +33,19 @@ export async function GET(req: NextRequest) {
       "SELECT id, username, nickname, avatarUrl, create_time, phone, email, gender, birthday FROM users WHERE id = ? LIMIT 1",
       [payload.sub]
     );
-    return ok(rows[0] ?? null);
+    const user = rows[0];
+    if (!user) return ok(null);
+
+    const normalizedAvatar = user.avatarUrl
+      ? resolveUploadImageUrl(rewriteLegacyAssetHosts(user.avatarUrl), "avatars")
+      : null;
+
+    return ok({
+      ...user,
+      id: String(user.id),
+      avatarUrl: normalizedAvatar,
+    });
   } catch {
     return fail("会话无效", { status: 401, code: "INVALID_SESSION" });
   }
 }
-

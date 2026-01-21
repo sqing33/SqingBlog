@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { forwardRef, useEffect, useMemo, useState } from "react";
+import type { ForwardedRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, ListTodo, StickyNote } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { getAccountSummary } from "@/lib/account-summary-client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,44 +22,57 @@ type UserMe = {
   avatarUrl: string | null;
 };
 
-type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
-
 type CountState = {
   posts: number;
   notes: number;
   todos: number;
 };
 
-export function UserAccount({
-  showCta = true,
-  ctaText = "把灵感放进时光胶囊，分享给更多人。",
-  variant = "panel",
-}: {
+type UserAccountProps = {
   showCta?: boolean;
   ctaText?: string;
+  showStats?: boolean;
   variant?: "panel" | "nav";
-}) {
+};
+
+export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function UserAccount(
+  {
+    showCta = true,
+    ctaText = "把灵感放进时光胶囊，分享给更多人。",
+    showStats = true,
+    variant = "panel",
+  },
+  ref
+) {
   const router = useRouter();
   const [me, setMe] = useState<UserMe | null>(null);
   const [counts, setCounts] = useState<CountState | null>(null);
   const [countsLoading, setCountsLoading] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((json: ApiResponse<UserMe | null>) => {
-        if (cancelled) return;
-        setMe(json?.data ?? null);
-      })
-      .catch(() => {
-        if (cancelled) return;
+    const controller = new AbortController();
+
+    const loadSummary = async () => {
+      setCountsLoading(true);
+      try {
+        const summary = await getAccountSummary();
+        if (controller.signal.aborted) return;
+        setMe(summary.me ?? null);
+        setCounts(summary.counts ?? null);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setMe(null);
-      });
-    return () => {
-      cancelled = true;
+        setCounts(null);
+      } finally {
+        setCountsLoading(false);
+      }
     };
-  }, []);
+
+    loadSummary();
+    return () => {
+      controller.abort();
+    };
+  }, [showStats, variant]);
 
   const isLogined = useMemo(() => Boolean(me?.nickname), [me]);
   const userAvatar = me?.avatarUrl || "/assets/avatar.png";
@@ -71,58 +86,6 @@ export function UserAccount({
   const goToTodo = () => router.push("/todo");
   const goToAdmin = () => router.push("/admin");
   const writeBlog = () => router.push("/blog/post");
-
-  useEffect(() => {
-    if (!isLogined) {
-      setCounts(null);
-      setCountsLoading(false);
-      return;
-    }
-
-    let cancelled = false;
-    const controller = new AbortController();
-
-    const loadCounts = async () => {
-      setCountsLoading(true);
-      try {
-        const [blogsRes, notesRes, todoRes] = await Promise.allSettled([
-          fetch("/api/user/blogs", { cache: "no-store", signal: controller.signal })
-            .then((r) => r.json() as Promise<ApiResponse<Array<{ id: string }>>>)
-            .then((j) => (Array.isArray(j?.data) ? j.data.length : 0)),
-          fetch("/api/notes", { cache: "no-store", signal: controller.signal })
-            .then(
-              (r) =>
-                r.json() as Promise<ApiResponse<{ notes?: Array<{ id: string }> }>>
-            )
-            .then((j) => (Array.isArray(j?.data?.notes) ? j.data.notes.length : 0)),
-          fetch("/api/todo", { cache: "no-store", signal: controller.signal })
-            .then(
-              (r) =>
-                r.json() as Promise<ApiResponse<{ items?: Array<{ id: string }> }>>
-            )
-            .then((j) => (Array.isArray(j?.data?.items) ? j.data.items.length : 0)),
-        ]);
-
-        if (cancelled) return;
-        setCounts({
-          posts: blogsRes.status === "fulfilled" ? blogsRes.value : 0,
-          notes: notesRes.status === "fulfilled" ? notesRes.value : 0,
-          todos: todoRes.status === "fulfilled" ? todoRes.value : 0,
-        });
-      } catch {
-        if (cancelled) return;
-        setCounts({ posts: 0, notes: 0, todos: 0 });
-      } finally {
-        if (!cancelled) setCountsLoading(false);
-      }
-    };
-
-    loadCounts();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [isLogined]);
 
   const logout = async () => {
     try {
@@ -163,7 +126,12 @@ export function UserAccount({
 
   if (variant === "nav") {
     return (
-      <div className="user-account-nav" role="navigation" aria-label="账号导航栏">
+      <div
+        ref={ref as unknown as ForwardedRef<HTMLDivElement>}
+        className="user-account-nav"
+        role="navigation"
+        aria-label="账号导航栏"
+      >
         <div className="user-account-nav__inner">
           <div className="user-account-nav__brand">博客</div>
 
@@ -227,7 +195,10 @@ export function UserAccount({
   }
 
   return (
-    <section className="panel panel--aside user-account-panel glass-card">
+    <section
+      ref={ref as unknown as ForwardedRef<HTMLElement>}
+      className="panel panel--aside user-account-panel glass-card"
+    >
       <div className="side-card__header">
         <h4 className="side-card__title">账号</h4>
       </div>
@@ -274,41 +245,60 @@ export function UserAccount({
             登录/注册
           </button>
         ) : (
-          <div className="user-card__stats" aria-label="快捷入口">
-            <button
-              type="button"
-              className="user-card__stat"
-              onClick={goToUserInfo}
-              aria-label="查看个人页面"
-            >
-              <div className="user-card__stat-label">帖子</div>
-              <div className="user-card__stat-value">
-                {countsLoading ? "…" : String(counts?.posts ?? 0)}
-              </div>
-            </button>
-            <button
-              type="button"
-              className="user-card__stat"
-              onClick={goToNotes}
-              aria-label="打开便签"
-            >
-              <div className="user-card__stat-label">便签</div>
-              <div className="user-card__stat-value">
-                {countsLoading ? "…" : String(counts?.notes ?? 0)}
-              </div>
-            </button>
-            <button
-              type="button"
-              className="user-card__stat"
-              onClick={goToTodo}
-              aria-label="打开代办"
-            >
-              <div className="user-card__stat-label">代办</div>
-              <div className="user-card__stat-value">
-                {countsLoading ? "…" : String(counts?.todos ?? 0)}
-              </div>
-            </button>
-          </div>
+          showStats ? (
+            <div className="user-card__stats" aria-label="快捷入口">
+              <button
+                type="button"
+                className="user-card__stat"
+                onClick={goToUserInfo}
+                aria-label="查看个人页面"
+              >
+                <div className="user-card__stat-label">帖子</div>
+                <div className="user-card__stat-value">
+                  {countsLoading ? "…" : String(counts?.posts ?? 0)}
+                </div>
+              </button>
+              <button
+                type="button"
+                className="user-card__stat"
+                onClick={goToNotes}
+                aria-label="打开便签"
+              >
+                <div className="user-card__stat-label">便签</div>
+                <div className="user-card__stat-value">
+                  {countsLoading ? "…" : String(counts?.notes ?? 0)}
+                </div>
+              </button>
+              <button
+                type="button"
+                className="user-card__stat"
+                onClick={goToTodo}
+                aria-label="打开代办"
+              >
+                <div className="user-card__stat-label">代办</div>
+                <div className="user-card__stat-value">
+                  {countsLoading ? "…" : String(counts?.todos ?? 0)}
+                </div>
+              </button>
+            </div>
+          ) : (
+            <div className="user-card__quick-actions">
+              <button
+                type="button"
+                className={cn("user-card__primary", "user-card__primary--compact")}
+                onClick={goToNotes}
+              >
+                便签
+              </button>
+              <button
+                type="button"
+                className={cn("user-card__primary", "user-card__primary--compact")}
+                onClick={goToTodo}
+              >
+                代办
+              </button>
+            </div>
+          )
         )}
       </div>
 
@@ -328,4 +318,6 @@ export function UserAccount({
       ) : null}
     </section>
   );
-}
+});
+
+UserAccount.displayName = "UserAccount";

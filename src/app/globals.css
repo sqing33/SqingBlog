@@ -4,6 +4,14 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@font-face {
+  font-family: "ExternalCJK";
+  src: url("/fonts/jiyinghuipianheyuan.ttf") format("truetype");
+  font-display: swap;
+  font-style: normal;
+  font-weight: 100 900;
+}
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -124,8 +132,22 @@
 }
 
 :root {
-  --font-family: var(--font-sans);
-  --font-title: var(--font-serif);
+  --system-font-latin: ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  --system-font-cjk: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Noto Sans CJK SC", "Source Han Sans SC", "Heiti SC", sans-serif;
+
+  /* --app-font-cjk-choice: "ExternalCJK";
+  --app-font-latin-choice: "ExternalLatin"; */
+  --app-font-cjk-choice: var(--system-font-cjk);
+
+  --app-font-cjk: var(--app-font-cjk-choice);
+  --app-font-latin: var(--app-font-latin-choice, var(--app-font-cjk));
+
+  --font-family: var(--app-font-latin), var(--app-font-cjk),
+    var(--system-font-latin), var(--system-font-cjk);
+  --font-title: var(--app-font-latin), var(--app-font-cjk),
+    var(--system-font-latin), var(--system-font-cjk);
 }
 
 html,
@@ -139,8 +161,7 @@ html {
 
 body {
   background-color: #ffffff;
-  font-family: var(--font-sans), system-ui, -apple-system, "PingFang SC",
-    "Microsoft YaHei", sans-serif;
+  font-family: var(--font-family);
   height: 100vh;
   width: 100vw;
   position: relative;
@@ -153,7 +174,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-serif), "Songti SC", "STSong", serif;
+  font-family: var(--font-title);
 }
 
 .conta {
@@ -287,6 +308,17 @@ h6 {
   overflow-x: hidden;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+}
+
+.home-shell-lock {
+  overflow: hidden !important;
+  scrollbar-gutter: auto;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.home-shell-lock::-webkit-scrollbar {
+  display: none;
 }
 
 .home-snap-scroll {

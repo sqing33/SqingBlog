@@ -91,7 +91,22 @@ export default async function UserCenterPage() {
   const feedbackCount = feedbackCountRow?.[0]?.total ?? 0;
 
   const recentPosts = await mysqlQuery<RecentPostRow>(
-    "SELECT b.id, b.title, b.create_time, b.coverUrl, b.category FROM blog b JOIN user_blog ub ON b.id = ub.blog_id WHERE ub.user_id = ? ORDER BY b.create_time DESC LIMIT 5",
+    `SELECT
+      b.id,
+      b.title,
+      b.create_time,
+      b.coverUrl,
+      COALESCE(
+        GROUP_CONCAT(DISTINCT bcr.category_name ORDER BY bcr.category_name SEPARATOR ','),
+        '未分类'
+      ) AS category
+    FROM blog b
+      JOIN user_blog ub ON b.id = ub.blog_id
+      LEFT JOIN blog_category_relation bcr ON bcr.blog_id = b.id
+    WHERE ub.user_id = ?
+    GROUP BY b.id
+    ORDER BY b.create_time DESC
+    LIMIT 5`,
     [session.sub]
   );
 

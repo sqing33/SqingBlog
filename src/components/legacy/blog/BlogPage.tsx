@@ -5,19 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { ArrowLeft, ChevronDown, MessageCircle, Share2, Star } from "lucide-react";
+import { ArrowLeft, MessageCircle, Share2, Star } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { initCodeCollapse } from "@/lib/codeCollapse";
+import { getAccountSummary } from "@/lib/account-summary-client";
 import { Comments } from "@/components/comments/Comments";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Edit } from "lucide-react";
+import { UserAccount } from "@/components/legacy/blog/UserAccount";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -103,16 +98,10 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((r) => r.json())
-      .then((json: ApiResponse<UserMe | null>) => {
-        if (cancelled) return;
-        setMe(json?.data ?? null);
-      })
-      .catch(() => {
-        if (cancelled) return;
-        setMe(null);
-      });
+    void getAccountSummary().then((summary) => {
+      if (cancelled) return;
+      setMe(summary.me ?? null);
+    });
     return () => {
       cancelled = true;
     };
@@ -239,7 +228,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
         titleEl.style.fontSize = "24px";
         titleEl.style.width = "max-content";
         titleEl.style.whiteSpace = "nowrap";
-        targetTitleWidth = titleEl.getBoundingClientRect().width;
+        const rectWidth = titleEl.getBoundingClientRect().width;
+        const scrollWidth = titleEl.scrollWidth;
+        targetTitleWidth = Math.ceil(Math.max(rectWidth, scrollWidth)) + 8;
 
         titleEl.style.fontSize = originalFontSize;
         titleEl.style.width = originalWidth;
@@ -491,13 +482,32 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
     };
 
     let cleanup: void | (() => void);
-    const timeout = window.setTimeout(() => {
-      cleanup = setup();
-    }, 500);
+    let cancelled = false;
+
+    const runSetup = () => {
+      if (cancelled) return;
+      const fontsReady = (document as unknown as { fonts?: { ready?: Promise<unknown> } }).fonts
+        ?.ready;
+      if (!fontsReady) {
+        cleanup = setup();
+        return;
+      }
+
+      fontsReady
+        .catch(() => undefined)
+        .then(() => {
+          if (cancelled) return;
+          cleanup = setup();
+        });
+    };
+
+    const timeout = window.setTimeout(runSetup, 500);
 
     return () => {
+      cancelled = true;
       window.clearTimeout(timeout);
       cleanup?.();
+      ScrollTrigger.getById("blog-page-hero")?.kill();
     };
   }, [post.id]);
 
@@ -545,20 +555,6 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
     }
   };
 
-  const isLogined = Boolean(me?.nickname);
-  const userAvatar = me?.avatarUrl || "/assets/avatar.png";
-  const userNickname = me?.nickname || "游客";
-
-  const logout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {
-      // ignore
-    }
-    setMe(null);
-    router.push("/login");
-  };
-
   return (
     <div
       className="blog blog-page"
@@ -569,7 +565,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
           <div className="main-col">
             <section ref={heroRef} className="blog-hero">
               <div className="blog-hero__inner">
-                <Link className="blog-hero__back" href="/blog" aria-label="返回博客列表">
+                <Link className="blog-hero__back" href="/?panel=blog" aria-label="返回博客列表">
                   <span className="el-icon">
                     <ArrowLeft />
                   </span>
@@ -620,98 +616,7 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
 
           <div className="aside-col">
             <div className="blog-sidebar">
-              <section ref={accountRef} className="side-card side-card--account">
-                <div className="side-card__header">
-                  <h4 className="side-card__title">账号</h4>
-                </div>
-
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      type="button"
-                      className={cn(
-                        "user-card w-full text-left",
-                        "appearance-none bg-transparent p-0",
-                        "cursor-pointer"
-                      )}
-                      aria-label="打开账号菜单"
-                    >
-                      <div className="user-card__avatar">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={userAvatar} alt="" />
-                      </div>
-                      <div className="user-card__info">
-                        <div className="user-card__name">{userNickname}</div>
-                        <div className="user-card__desc">
-                          {isLogined ? "欢迎回来，去看看最新帖子吧" : "登录后可发帖、收藏和评论"}
-                        </div>
-                      </div>
-                      <div className="user-card__more" aria-hidden="true">
-                        <ChevronDown />
-                      </div>
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" sideOffset={10}>
-                    {!isLogined ? (
-                      <DropdownMenuItem onSelect={() => router.push("/login")}>
-                        登录/注册
-                      </DropdownMenuItem>
-                    ) : (
-                      <>
-                        <DropdownMenuItem onSelect={() => router.push("/user")}>个人中心</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => router.push("/user/blogs")}>
-                          我的发帖
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => router.push("/user/feedback")}>
-                          反馈
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                      </>
-                    )}
-
-                    <DropdownMenuItem onSelect={() => router.push("/admin")}>后台管理</DropdownMenuItem>
-
-                    {isLogined ? (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem variant="destructive" onSelect={logout}>
-                          退出登录
-                        </DropdownMenuItem>
-                      </>
-                    ) : null}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <div className="user-card__quick">
-                  {!isLogined ? (
-                    <button
-                      type="button"
-                      className={cn("user-card__primary", "user-card__primary--primary")}
-                      onClick={() => router.push("/login")}
-                    >
-                      登录/注册
-                    </button>
-                  ) : (
-                    <div className="user-card__quick-actions">
-                      <button
-                        type="button"
-                        className={cn("user-card__primary", "user-card__primary--compact")}
-                        onClick={() => router.push("/notes")}
-                      >
-                        便签
-                      </button>
-                      <button
-                        type="button"
-                        className={cn("user-card__primary", "user-card__primary--compact")}
-                        onClick={() => router.push("/todo")}
-                      >
-                        代办
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </section>
+              <UserAccount ref={accountRef} showCta={false} />
 
               <div className="blog-actions-wrapper">
                 <nav className="blog-actions">

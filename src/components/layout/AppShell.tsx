@@ -18,14 +18,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
-    if (isAdminRoute) {
-      root.style.setProperty("--font-family", "Arial, sans-serif");
-      root.style.setProperty("--font-title", "Arial, sans-serif");
-      return;
-    }
     root.style.removeProperty("--font-family");
     root.style.removeProperty("--font-title");
-  }, [isAdminRoute]);
+  }, []);
 
   useEffect(() => {
     const el = scrollRef.current;
