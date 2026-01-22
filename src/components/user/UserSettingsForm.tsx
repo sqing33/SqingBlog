@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ArrowRight, Home, LockKeyhole, UserCircle2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+import "@/styles/glassmorphism.scss";
 
 type UserProfile = {
   id: string;
@@ -163,125 +167,200 @@ export function UserSettingsForm() {
   }
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-2xl font-semibold">账号设置</h1>
+    <div className="space-y-6">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">账号设置</h1>
+          <div className="mt-1 text-sm text-muted-foreground">更新头像、资料与密码</div>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <Button asChild variant="secondary" className="justify-between sm:w-auto">
+            <Link href="/user">
+              返回个人中心 <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="justify-between sm:w-auto">
+            <Link href="/blog">
+              返回博客首页 <Home className="h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
+      </div>
 
       {message ? (
-        <div className="rounded-md border bg-muted px-3 py-2 text-sm">{message}</div>
+        <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm">{message}</div>
       ) : null}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">头像</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="h-16 w-16 overflow-hidden rounded-full border bg-muted">
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : null}
-          </div>
-          <Input
-            type="file"
-            accept="image/*"
-            disabled={avatarUploading}
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) uploadAvatar(file);
-            }}
-          />
-        </CardContent>
-      </Card>
+      <div className="grid w-full gap-4 lg:grid-cols-[minmax(0,_1fr)_360px]">
+        <div className="min-w-0 space-y-4">
+          <Card className="w-full min-w-0 rounded-2xl glass-card">
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="text-base">资料</CardTitle>
+                <div className="text-xs text-muted-foreground">展示信息与联系方式</div>
+              </div>
+              <Button size="sm" disabled={saving} onClick={saveProfile}>
+                保存资料
+              </Button>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>用户名</Label>
+                <Input
+                  value={profile.username}
+                  onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>昵称</Label>
+                <Input
+                  value={profile.nickname}
+                  onChange={(e) => setProfile({ ...profile, nickname: e.target.value })}
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>手机号</Label>
+                <Input
+                  value={profile.phone}
+                  onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>邮箱</Label>
+                <Input
+                  value={profile.email}
+                  onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>性别</Label>
+                <Select
+                  value={profile.gender || "无"}
+                  onValueChange={(v) =>
+                    setProfile({ ...profile, gender: v === "无" ? null : v })
+                  }
+                >
+                  <SelectTrigger className="bg-transparent/50">
+                    <SelectValue placeholder="请选择" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="男">男</SelectItem>
+                    <SelectItem value="女">女</SelectItem>
+                    <SelectItem value="无">无</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>生日（YYYY-MM-DD）</Label>
+                <Input
+                  value={profile.birthday || ""}
+                  onChange={(e) =>
+                    setProfile({ ...profile, birthday: e.target.value || null })
+                  }
+                  placeholder="1999-05-20"
+                  className="bg-transparent/50"
+                />
+              </div>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">资料</CardTitle>
-          <Button size="sm" disabled={saving} onClick={saveProfile}>
-            保存资料
-          </Button>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>用户名</Label>
-            <Input
-              value={profile.username}
-              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>昵称</Label>
-            <Input
-              value={profile.nickname}
-              onChange={(e) => setProfile({ ...profile, nickname: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>手机号</Label>
-            <Input
-              value={profile.phone}
-              onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>邮箱</Label>
-            <Input
-              value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>性别</Label>
-            <Select
-              value={profile.gender || "无"}
-              onValueChange={(v) =>
-                setProfile({ ...profile, gender: v === "无" ? null : v })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="请选择" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="男">男</SelectItem>
-                <SelectItem value="女">女</SelectItem>
-                <SelectItem value="无">无</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label>生日（YYYY-MM-DD）</Label>
-            <Input
-              value={profile.birthday || ""}
-              onChange={(e) =>
-                setProfile({ ...profile, birthday: e.target.value || null })
-              }
-              placeholder="1999-05-20"
-            />
-          </div>
-        </CardContent>
-      </Card>
+          <Card className="w-full min-w-0 rounded-2xl glass-card">
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="text-base">账号</CardTitle>
+                <div className="text-xs text-muted-foreground">修改密码（留空则不改）</div>
+              </div>
+              <Button size="sm" disabled={saving} onClick={saveAccount}>
+                保存账号设置
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>新密码</Label>
+                <Input
+                  type="password"
+                  value={accountPassword}
+                  onChange={(e) => setAccountPassword(e.target.value)}
+                  placeholder="******"
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="rounded-xl border bg-background/40 p-3 text-sm text-muted-foreground">
+                当前实现与旧系统兼容：密码使用 SHA256 存储（后续可升级 bcrypt）。
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">账号</CardTitle>
-          <Button size="sm" disabled={saving} onClick={saveAccount}>
-            保存账号设置
-          </Button>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label>新密码（留空则不改）</Label>
-            <Input
-              type="password"
-              value={accountPassword}
-              onChange={(e) => setAccountPassword(e.target.value)}
-              placeholder="******"
-            />
-          </div>
-          <div className="text-sm text-muted-foreground sm:pt-8">
-            当前实现与旧系统兼容：密码使用 SHA256 存储（后续可升级 bcrypt）。
-          </div>
-        </CardContent>
-      </Card>
+        <div className="min-w-0 space-y-4">
+          <Card className="w-full min-w-0 rounded-2xl glass-card">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-base">头像</CardTitle>
+              <div className="text-xs text-muted-foreground">选择一张图片即可更新</div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="relative h-16 w-16 overflow-hidden rounded-2xl border bg-muted">
+                  {profile.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <UserCircle2 className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  )}
+                </div>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  disabled={avatarUploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) uploadAvatar(file);
+                  }}
+                  className="bg-transparent/50"
+                />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                头像上传后会自动保存，无需额外点击。
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="w-full min-w-0 rounded-2xl glass-card">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-base">快捷入口</CardTitle>
+              <div className="text-xs text-muted-foreground">继续管理你的内容</div>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button asChild variant="secondary" className="w-full justify-between">
+                <Link href="/user?section=blogs">
+                  我的发帖 <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="secondary" className="w-full justify-between">
+                <Link href="/user?section=collections">
+                  我的收藏 <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button asChild variant="secondary" className="w-full justify-between">
+                <Link href="/user?section=feedback">
+                  我的反馈 <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+              <div className="rounded-xl border bg-background/40 p-3 text-xs text-muted-foreground">
+                <div className="flex items-start gap-2">
+                  <LockKeyhole className="mt-0.5 h-4 w-4" />
+                  <div>建议使用强密码，并避免与其他网站重复。</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
-

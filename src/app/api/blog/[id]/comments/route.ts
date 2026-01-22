@@ -42,7 +42,8 @@ function buildTree(all: CommentRow[]): CommentNode[] {
     bn_id: String(row.bn_id),
     content: rewriteLegacyAssetHosts(row.content),
     avatarUrl: resolveUploadImageUrl(row.avatarUrl, "avatars"),
-    likedByMe: Boolean(row.likedByMe),
+    like: Number(row.like ?? 0),
+    likedByMe: Number(row.likedByMe ?? 0) === 1,
     children: [],
   });
 

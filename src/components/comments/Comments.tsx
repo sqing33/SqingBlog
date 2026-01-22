@@ -68,6 +68,7 @@ function ReplyItem({
   const avatarSrc = node.avatarUrl || "/assets/avatar.png";
   const floorLabel = `${rootFloor}-${replyFloor}楼`;
   const likePending = likePendingIds.has(node.id);
+  const likeCount = Number(node.like ?? 0);
 
   return (
     <div className="rounded-lg border bg-background/60 p-3">
@@ -106,7 +107,8 @@ function ReplyItem({
               onClick={() => onLike(node.id)}
             >
               <ThumbsUp className="mr-1 size-4" />
-              {node.likedByMe ? "已赞" : "点赞"} {node.like ? `(${node.like})` : ""}
+              <span className="whitespace-nowrap">{node.likedByMe ? "已赞" : "点赞"}</span>
+              <span className="ml-1 tabular-nums opacity-80">({likeCount})</span>
             </Button>
             <Button size="sm" variant="outline" onClick={() => onReply(node.id, node.nickname)}>
               <ReplyIcon className="mr-1 size-4" />
@@ -137,6 +139,7 @@ function RootComment({
 
   const avatarSrc = node.avatarUrl || "/assets/avatar.png";
   const likePending = likePendingIds.has(node.id);
+  const likeCount = Number(node.like ?? 0);
   const children = useMemo(() => {
     const list = (node.children || []).slice();
     list.sort((a, b) => String(a.create_time).localeCompare(String(b.create_time)));
@@ -216,7 +219,8 @@ function RootComment({
                   onClick={() => onLike(node.id)}
                 >
                   <ThumbsUp className="mr-1 size-4" />
-                  {node.likedByMe ? "已赞" : "点赞"} {node.like ? `(${node.like})` : ""}
+                  <span className="whitespace-nowrap">{node.likedByMe ? "已赞" : "点赞"}</span>
+                  <span className="ml-1 tabular-nums opacity-80">({likeCount})</span>
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => onReply(node.id, node.nickname)}>
                   <ReplyIcon className="mr-1 size-4" />

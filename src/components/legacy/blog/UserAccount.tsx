@@ -80,8 +80,8 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
 
   const goLogin = () => router.push("/login");
   const goToUserInfo = () => router.push("/user");
-  const goToMyBlogs = () => router.push("/user/blogs");
-  const goToFeedback = () => router.push("/user/feedback");
+  const goToMyBlogs = () => router.push("/user?section=blogs");
+  const goToFeedback = () => router.push("/user?section=feedback");
   const goToNotes = () => router.push("/notes");
   const goToTodo = () => router.push("/todo");
   const goToAdmin = () => router.push("/admin");
