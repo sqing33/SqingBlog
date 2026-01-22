@@ -27,6 +27,7 @@ export const mysqlPool: mysql.Pool =
         connectionLimit: 10,
         enableKeepAlive: true,
         keepAliveInitialDelay: 0,
+        ssl: env.DB_SSL ? { minVersion: "TLSv1.2", rejectUnauthorized: true } : undefined,
         dateStrings: true,
         supportBigNumbers: true,
         bigNumberStrings: true,
@@ -38,6 +39,9 @@ if (shouldCreatePool) {
 }
 
 export async function ensureMySqlMigrations() {
+  if (env.SKIP_MIGRATIONS) {
+    return;
+  }
   if (!global.__mysqlMigrationsPromise) {
     global.__mysqlMigrationsPromise = runMySqlMigrations(mysqlPool).catch((error) => {
       global.__mysqlMigrationsPromise = undefined;

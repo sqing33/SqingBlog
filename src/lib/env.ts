@@ -8,6 +8,14 @@ const envSchema = z.object({
   DB_USER: z.string().default("root"),
   DB_PASSWORD: z.string().default(""),
   DB_DATABASE: z.string().default("doraemon"),
+  DB_SSL: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
+  SKIP_MIGRATIONS: z
+    .enum(["true", "false"])
+    .transform((v) => v === "true")
+    .optional(),
 
   REDIS_HOST: z.string().default("127.0.0.1"),
   REDIS_PORT: z.coerce.number().int().positive().default(6379),

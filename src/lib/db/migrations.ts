@@ -162,7 +162,10 @@ async function releaseMigrationLock(conn: mysql.PoolConnection, lockName: string
 }
 
 function shouldAutoRunMigration(fileName: string) {
-  if (!MIGRATION_FILE_RE.test(fileName)) return false;
+  if (!MIGRATION_FILE_RE.test(fileName)) {
+     if (fileName === "verification_codes.sql") return true;
+     return false;
+  }
   if (fileName.includes("_migrate_")) return false;
   return true;
 }

@@ -1,10 +1,6 @@
-import crypto from "node:crypto";
-import fs from "node:fs/promises";
-import path from "node:path";
-
 import { NextRequest } from "next/server";
 
-import { env } from "@/lib/env";
+import { uploadToPixhost } from "@/lib/pixhost";
 
 export const runtime = "nodejs";
 
@@ -39,23 +35,28 @@ export async function POST(req: NextRequest) {
 
   const folder = parseUploadFolder(req.nextUrl.searchParams.get("folder"));
 
-  const uploadsBase = path.resolve(process.cwd(), env.UPLOADS_DIR);
-  const dir = path.join(uploadsBase, "images", folder);
-  await fs.mkdir(dir, { recursive: true });
+  // In production (Vercel), we must use external storage (Pixhost)
+  // because local filesystem is ephemeral and read-only for uploads.
+  // We'll use Pixhost for everything to keep it consistent.
 
   const timestamp = formatDateTimeForFilename(new Date());
-  const random = crypto.randomBytes(8).toString("hex");
+  // Basic cleaning of filename, though Pixhost handles this mostly
   const safeOriginal = file.name.replaceAll(/[^\w.\-()[\] ]+/g, "_");
-  const filename = `news_${timestamp}_${random}_${safeOriginal}`;
+  const filename = `${folder}_${timestamp}_${safeOriginal}`;
 
-  const arrayBuffer = await file.arrayBuffer();
-  await fs.writeFile(path.join(dir, filename), Buffer.from(arrayBuffer));
+  const uploadedUrl = await uploadToPixhost({
+    file,
+    filename,
+  });
 
-  const url = `/uploads/images/${folder}/${filename}`;
+  if (!uploadedUrl) {
+    return Response.json({ errno: 1, message: "上传到图床失败" }, { status: 500 });
+  }
+
   return Response.json({
     errno: 0,
     data: {
-      url,
+      url: uploadedUrl,
       alt: "",
       href: filename,
       filename,

@@ -3,8 +3,8 @@ import { z } from "zod";
 import { fail, ok } from "@/lib/api/response";
 import { sha256Hex } from "@/lib/crypto";
 import { toMySqlDateTime } from "@/lib/date";
-import { ensureRedisConnected, redisClient } from "@/lib/db/redis";
 import { mysqlQuery, mysqlExec } from "@/lib/db/mysql";
+import { getVerificationCode, deleteVerificationCode } from "@/lib/db/verification";
 import { SnowflakeId } from "@/lib/id/snowflake";
 
 export const runtime = "nodejs";
@@ -32,12 +32,14 @@ export async function POST(req: Request) {
   const { username, password, nickname, phone, email, code } = parsed.data;
 
   try {
-    await ensureRedisConnected();
-    const stored = await redisClient.get(`email_code:${email}`);
-    if (!stored) return fail("验证码已过期", { status: 400, code: "CODE_EXPIRED" });
+    const stored = await getVerificationCode(email);
+    if (!stored) return fail("验证码已过期或不存在", { status: 400, code: "CODE_EXPIRED" });
     if (stored !== code) return fail("验证码错误", { status: 400, code: "CODE_INVALID" });
-  } catch {
-    return fail("验证码校验失败", { status: 500, code: "REDIS_ERROR" });
+
+    // Cleanup verification code after successful check
+    await deleteVerificationCode(email);
+  } catch (err) {
+    return fail("验证码校验失败", { status: 500, code: "VERIFICATION_ERROR" });
   }
 
   try {

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { fail, ok } from "@/lib/api/response";
-import { ensureRedisConnected, redisClient } from "@/lib/db/redis";
+import { setVerificationCode } from "@/lib/db/verification";
 import { sendVerificationCode } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -25,8 +25,8 @@ export async function POST(req: Request) {
   const code = String(Math.floor(Math.random() * 1000000)).padStart(6, "0");
 
   try {
-    await ensureRedisConnected();
-    await redisClient.set(`email_code:${email}`, code, "EX", 60 * 5);
+    // 5 minutes expiration
+    await setVerificationCode(email, code, 60 * 5);
     await sendVerificationCode(email, code);
     return ok(null, { message: "验证码发送成功" });
   } catch (err) {
