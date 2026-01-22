@@ -1,24 +1,49 @@
 "use client";
 
-import { ChevronDown, ChevronLeft, Github } from "lucide-react";
+import { ChevronDown, Github } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { HomeMusicPlayer } from "@/components/home/HomeMusicPlayer";
+import { HomeRightPanel } from "@/components/home/HomeRightPanel";
 import { MoyuCard } from "@/components/home/MoyuCard";
 import { BlogIndex } from "@/components/legacy/blog/BlogIndex";
 
-type GridItem = {
-  src: string;
-  alt: string;
-  iconHref?: string;
-  iconSrc?: string;
-  iconAlt?: string;
-  iconClassName?: string;
-  imageClassName?: string;
-};
+function CsdnIconPlaceholder({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 1024 1024"
+      version="1.1"
+      xmlns="http://www.w3.org/2000/svg"
+      width="18"
+      height="18"
+    >
+      <path
+        d="M512 0c282.784 0 512 229.216 512 512s-229.216 512-512 512S0 794.784 0 512 229.216 0 512 0z m189.952 752l11.2-108.224c-31.904 9.536-100.928 16.128-147.712 16.128-134.464 0-205.728-47.296-195.328-146.304 11.584-110.688 113.152-145.696 232.64-145.696 54.784 0 122.432 8.8 151.296 18.336L768 272.704C724.544 262.24 678.272 256 599.584 256c-203.2 0-388.704 94.88-406.4 263.488C178.336 660.96 303.584 768 535.616 768c80.672 0 138.464-6.432 166.336-16z"
+        fill="#CE000D"
+        data-p-id="2630"
+      ></path>
+      {/* TODO: replace with real CSDN svg */}
+      <rect
+        x="3"
+        y="3"
+        width="18"
+        height="18"
+        rx="4"
+        fill="currentColor"
+        opacity="0.18"
+      />
+      <path
+        d="M7 12h10"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
 
 export function HomeWithCarousel() {
   const searchParams = useSearchParams();
@@ -35,39 +60,6 @@ export function HomeWithCarousel() {
   const [duanzi, setDuanzi] = useState<string | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
 
-  const items = useMemo<GridItem[]>(
-    () => [
-      {
-        src: "/assets/index/doraemon.png",
-        alt: "doraemon",
-        iconHref: "/anime/doraemon",
-        iconSrc: "/assets/index/icon-doraemon.png",
-        iconAlt: "doraemon",
-        imageClassName: "h-[100%] w-[100%]",
-        iconClassName: "",
-      },
-      {
-        src: "/assets/index/bunny-girl.png",
-        alt: "bunny girl",
-        iconHref: "/anime/bunny-girl",
-        iconSrc: "/assets/index/icon-bunny-girl.png",
-        iconAlt: "bunny girl",
-        imageClassName: "h-[100%] w-[100%]",
-        iconClassName: "transform scale-125",
-      },
-      {
-        src: "/assets/index/koe-no-katachi.png",
-        alt: "koe no katachi",
-        iconHref: "/anime/koe-no-katachi",
-        iconSrc: "/assets/index/icon-koe-no-katachi.png",
-        iconAlt: "koe no katachi",
-        imageClassName: "h-[100%] w-[100%]",
-        iconClassName: "",
-      },
-    ],
-    []
-  );
-
   useEffect(() => {
     const targetPanel = searchParams.get("panel");
     if (targetPanel !== "blog") return;
@@ -79,9 +71,9 @@ export function HomeWithCarousel() {
   }, [searchParams]);
 
   useEffect(() => {
-    const el = document.querySelector(".el-scrollbar__wrap") as
-      | HTMLDivElement
-      | null;
+    const el = document.querySelector(
+      ".el-scrollbar__wrap",
+    ) as HTMLDivElement | null;
     if (!el) return;
     shellScrollRef.current = el;
 
@@ -286,10 +278,10 @@ export function HomeWithCarousel() {
         >
           <section
             aria-label="首页拼图"
-            className="grid h-[100svh] w-full grid-cols-6 grid-rows-3 bg-transparent"
+            className="flex h-[100svh] w-full items-center bg-transparent"
           >
-            <div className="col-span-3 col-start-4 row-span-3 row-start-1 flex items-center justify-center p-10">
-              <div className="flex flex-col items-center gap-4">
+            <div className="flex h-full w-full flex-col items-center justify-center gap-8 px-6 sm:px-10 md:grid md:grid-cols-3 md:items-center md:justify-items-stretch md:gap-4 md:px-10 lg:px-24 xl:px-48 2xl:px-64">
+              <div className="flex flex-col items-center gap-4 md:col-start-2 md:row-start-1">
                 <div className="relative h-40 w-40 overflow-hidden rounded-full ring-2 ring-white/20 sm:h-48 sm:w-48 md:h-56 md:w-56">
                   <Image
                     src="/assets/avatar.jpg"
@@ -300,88 +292,44 @@ export function HomeWithCarousel() {
                     priority
                   />
                 </div>
-                <div className="flex items-center justify-center gap-2 text-center font-semibold tracking-wide text-[#3F3E3E] text-lg sm:text-xl md:text-2xl">
-                  <span>三青🎡</span>
-                  <a
-                    href="https://github.com/sqing33"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="打开 GitHub：sqing33"
-                    className="inline-flex items-center justify-center rounded-full border border-black/10 bg-white/70 p-2 text-[#3F3E3E]/80 shadow-sm backdrop-blur transition-colors hover:bg-white hover:text-[#3F3E3E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
-                  >
-                    <Github className="h-5 w-5" />
-                  </a>
-                </div>
-                <MoyuCard />
-              </div>
-            </div>
 
-            {items.map((item, idx) => (
-              <div key={item.src} className="contents">
-                <div
-                  className={[
-                    "col-span-2 flex items-center justify-center px-6",
-                    idx === 0
-                      ? "row-start-1"
-                      : idx === 1
-                      ? "row-start-2"
-                      : "row-start-3",
-                  ].join(" ")}
-                >
-                  <div
-                    className={[
-                      "relative flex items-center justify-center",
-                      item.imageClassName ?? "h-[78%] w-[86%]",
-                    ].join(" ")}
-                  >
-                    <Image
-                      src={item.src}
-                      alt={item.alt}
-                      fill
-                      priority={idx === 0}
-                      sizes="34vw"
-                      className="object-contain"
-                    />
+                <div className="flex w-40 flex-col items-center gap-3 text-center sm:w-48 md:w-56">
+                  <div className="text-[#3F3E3E] text-lg font-semibold tracking-wide sm:text-xl md:text-2xl">
+                    三青🎡
+                  </div>
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <a
+                      href="https://github.com/sqing33"
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="打开 GitHub：sqing33"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-sm font-semibold text-[#3F3E3E]/80 shadow-sm backdrop-blur transition-colors hover:bg-white hover:text-[#3F3E3E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                    >
+                      <Github className="h-4 w-4" />
+                      <span>sqing33</span>
+                    </a>
+                    <a
+                      href="https://blog.csdn.net/qq_31800065"
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="打开 CSDN：qq_31800065"
+                      className="inline-flex items-center justify-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-2 text-sm font-semibold text-[#3F3E3E]/80 shadow-sm backdrop-blur transition-colors hover:bg-white hover:text-[#3F3E3E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                    >
+                      <CsdnIconPlaceholder className="h-4 w-4 text-[#3F3E3E]/80" />
+                      <span>三青33</span>
+                    </a>
                   </div>
                 </div>
-
-                <div
-                  className={[
-                    "col-span-1 flex items-center justify-center px-4",
-                    idx === 0
-                      ? "row-start-1"
-                      : idx === 1
-                      ? "row-start-2"
-                      : "row-start-3",
-                  ].join(" ")}
-                >
-                  {item.iconSrc ? (
-                    <Link
-                      href={item.iconHref ?? "/anime"}
-                      aria-label={`前往：${item.iconAlt ?? item.alt}`}
-                      className="group relative flex h-full w-full -left-10 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
-                    >
-                      <div
-                        className={[
-                          "relative h-full w-full",
-                          item.iconClassName ?? "",
-                        ].join(" ")}
-                      >
-                        <Image
-                          src={item.iconSrc}
-                          alt={item.iconAlt ?? ""}
-                          fill
-                          sizes="16vw"
-                          className="object-contain"
-                          priority={idx === 0}
-                        />
-                      </div>
-                      <ChevronLeft className="dora-jump-arrow absolute -right-15 top-1/2 z-10 h-7 w-7 -translate-y-1/2 text-[#3F3E3E]/70 transition-colors group-hover:text-[#3F3E3E]" />
-                    </Link>
-                  ) : null}
-                </div>
               </div>
-            ))}
+
+              <div className="flex w-full justify-center md:col-start-1 md:row-start-1 md:justify-center">
+                <MoyuCard />
+              </div>
+
+              <div className="hidden md:flex md:col-start-3 md:row-start-1 md:h-full md:items-center md:justify-center">
+                <HomeRightPanel />
+              </div>
+            </div>
           </section>
 
           <section aria-label="博客内容" className="h-[100svh] w-full">

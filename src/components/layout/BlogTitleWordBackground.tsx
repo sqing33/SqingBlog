@@ -8,24 +8,61 @@ type WordVariant = "solid" | "outline" | "soft";
 
 type WordItem = {
   id: string;
-  text: string;
+  type: "text" | "image";
+  content: string;
   x: number;
   y: number;
   rotate: number;
   rotateDelta: number;
-  fontSize: number;
+  size: number;
   opacity: number;
   color: string;
-  fontFamily: string;
-  fontWeight: number;
-  fontStyle: "normal" | "italic";
-  letterSpacing: string;
+  fontFamily?: string;
+  fontWeight?: number;
+  fontStyle?: "normal" | "italic";
+  letterSpacing?: string;
   variant: WordVariant;
   duration: number;
   delay: number;
   driftX: number;
   driftY: number;
 };
+
+const BACKGROUND_SVGS = [
+  "兔子.svg",
+  "螃蟹.svg",
+  "猪.svg",
+  "鱼.svg",
+  "羊.svg",
+  "狗.svg",
+  "猫.svg",
+  "我的猫友1.svg",
+  "鸡.svg",
+  "蝴蝶.svg",
+  "乌龟.svg",
+  "猴子.svg",
+  "花椰菜.svg",
+  "萝卜.svg",
+  "鸭腿，鸡腿.svg",
+  "西红柿，番茄.svg",
+  "香肠.svg",
+  "扇贝.svg",
+  "鸡肉.svg",
+  "玉米.svg",
+  "南瓜.svg",
+  "蘑菇.svg",
+  "茄子.svg",
+  "烤肉.svg",
+  "029_电视.svg",
+  "029_勿扰.svg",
+  "029_冰箱.svg",
+  "钓鱼.svg",
+  "风筝.svg",
+  "旅游.svg",
+  "书.svg",
+  "羽毛球.svg",
+  "望远镜.svg",
+];
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -119,15 +156,17 @@ function buildWordItems(stats: WordStat[], width: number, height: number) {
       : (() => {
           const keepTop = Math.max(1, Math.floor(targetCount * 0.65));
           const top = sorted.slice(0, keepTop);
-          const rest = shuffle(sorted.slice(keepTop)).slice(0, targetCount - keepTop);
+          const rest = shuffle(sorted.slice(keepTop)).slice(
+            0,
+            targetCount - keepTop,
+          );
           return shuffle([...top, ...rest]);
         })();
 
   const counts = selected.map((s) => s.count);
   const maxCount = Math.max(...counts);
   const minCount = Math.min(...counts);
-  const denom =
-    Math.log(maxCount + 1) - Math.log(minCount + 1) || 1;
+  const denom = Math.log(maxCount + 1) - Math.log(minCount + 1) || 1;
 
   const colors = [
     "#0f172a",
@@ -145,32 +184,44 @@ function buildWordItems(stats: WordStat[], width: number, height: number) {
   const weights = [300, 400, 500, 600, 700] as const;
 
   const items: WordItem[] = [];
-  for (let i = 0; i < selected.length; i += 1) {
-    const stat = selected[i];
+
+  // Mix in SVG items to the selection pool
+  // Calculate how many SVGs to include relative to text (e.g. 15-25% of total items)
+  const svgCount = Math.floor(targetCount * 0.5);
+
+  // Pre-shuffle SVGs to avoid duplicates near each other and pick diverse ones
+  const svgPool = shuffle([...BACKGROUND_SVGS]);
+
+  // Combine text items and SVG placeholders in the main loop
+  const totalItems = selected.length + svgCount;
+
+  for (let i = 0; i < totalItems; i += 1) {
+    const isSvg = i >= selected.length;
+    // For SVGs, pick from the shuffled pool cyclically. For text, pick from selected stats
+    const stat = isSvg ? null : selected[i];
+    const svgName = isSvg
+      ? svgPool[(i - selected.length) % svgPool.length]
+      : null;
+
     const x = randomBetween(margin, Math.max(margin, width - margin));
     const y = randomBetween(margin, Math.max(margin, height - margin));
 
     const rotateBase = pickOne([
-      -90,
-      -75,
-      -60,
-      -45,
-      -30,
-      -15,
-      0,
-      15,
-      30,
-      45,
-      60,
-      75,
-      90,
+      -90, -75, -60, -45, -30, -15, 0, 15, 30, 45, 60, 75, 90,
     ] as const);
     const rotate = rotateBase + randomBetween(-6, 6);
     const rotateDelta = randomBetween(-10, 10);
 
-    const ratio = (Math.log(stat.count + 1) - Math.log(minCount + 1)) / denom;
-    const baseFontSize = 14 + ratio * 46;
-    const fontSize = Math.round(clamp(baseFontSize + randomBetween(-5, 6), 12, 64));
+    // Size calculation
+    let size: number;
+    if (isSvg) {
+      size = Math.round(randomBetween(35, 60));
+    } else {
+      const ratio =
+        (Math.log(stat!.count + 1) - Math.log(minCount + 1)) / denom;
+      const baseFontSize = 14 + ratio * 46;
+      size = Math.round(clamp(baseFontSize + randomBetween(-5, 6), 12, 64));
+    }
 
     const variant = (() => {
       const r = Math.random();
@@ -199,19 +250,20 @@ function buildWordItems(stats: WordStat[], width: number, height: number) {
     const color = pickOne(colors);
 
     items.push({
-      id: `${i}-${stat.text}-${stat.count}-${Math.round(x)}-${Math.round(y)}`,
-      text: stat.text,
+      id: `${i}-${isSvg ? svgName : stat!.text}-${Math.round(x)}-${Math.round(y)}`,
+      type: isSvg ? "image" : "text",
+      content: isSvg ? `/assets/background/${svgName}` : stat!.text,
       x,
       y,
       rotate,
       rotateDelta,
-      fontSize,
+      size,
       opacity,
       color,
-      fontFamily,
-      fontWeight,
-      fontStyle,
-      letterSpacing,
+      fontFamily: isSvg ? undefined : fontFamily,
+      fontWeight: isSvg ? undefined : fontWeight,
+      fontStyle: isSvg ? undefined : fontStyle,
+      letterSpacing: isSvg ? undefined : letterSpacing,
       variant,
       duration,
       delay,
@@ -271,7 +323,7 @@ export function BlogTitleWordBackground() {
   const stats = useMemo(() => buildWordStats(titles), [titles]);
   const items = useMemo(
     () => buildWordItems(stats, viewport.width, viewport.height),
-    [stats, viewport.width, viewport.height]
+    [stats, viewport.width, viewport.height],
   );
 
   if (!items.length) return null;
@@ -286,7 +338,9 @@ export function BlogTitleWordBackground() {
             {
               left: item.x,
               top: item.y,
-              fontSize: item.fontSize,
+              fontSize: item.type === "text" ? item.size : undefined,
+              width: item.type === "image" ? item.size : undefined,
+              height: item.type === "image" ? item.size : undefined,
               opacity: item.opacity,
               color: item.variant === "outline" ? "transparent" : item.color,
               fontFamily: item.fontFamily,
@@ -303,7 +357,25 @@ export function BlogTitleWordBackground() {
             } as CSSProperties
           }
         >
-          {item.text}
+          {item.type === "text" ? (
+            item.content
+          ) : (
+            /* Using CSS Mask to colorize the SVG (black -> custom color) */
+            <span
+              className="block w-full h-full pointer-events-none select-none"
+              style={{
+                backgroundColor: item.color,
+                maskImage: `url("${item.content}")`,
+                maskRepeat: "no-repeat",
+                maskPosition: "center",
+                maskSize: "contain",
+                WebkitMaskImage: `url("${item.content}")`,
+                WebkitMaskRepeat: "no-repeat",
+                WebkitMaskPosition: "center",
+                WebkitMaskSize: "contain",
+              }}
+            />
+          )}
         </span>
       ))}
     </div>

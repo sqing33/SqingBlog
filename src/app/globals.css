@@ -280,6 +280,23 @@ h6 {
   }
 }
 
+.home-right-bubble-float {
+  animation: home-right-bubble-float
+    var(--home-right-float-duration, 7.2s) ease-in-out infinite;
+  animation-delay: var(--home-right-float-delay, 0s);
+  will-change: transform;
+}
+
+@keyframes home-right-bubble-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0) rotate(1.2deg);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dora-word-bg__item {
     animation: none;
@@ -294,6 +311,10 @@ h6 {
   }
 
   .home-music-disc-spin {
+    animation: none;
+  }
+
+  .home-right-bubble-float {
     animation: none;
   }
 }

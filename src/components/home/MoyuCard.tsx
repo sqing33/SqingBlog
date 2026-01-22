@@ -171,7 +171,10 @@ export function MoyuCard() {
         if (!json?.ok) throw new Error("返回数据异常");
 
         const payload = json?.data ?? null;
-        if (payload?.date?.gregorian && !isSameLocalDayByGregorian(payload.date.gregorian)) {
+        if (
+          payload?.date?.gregorian &&
+          !isSameLocalDayByGregorian(payload.date.gregorian)
+        ) {
           if (!opts?.force && !retriedMoyuRef.current) {
             retriedMoyuRef.current = true;
             await loadMoyu({ signal: opts?.signal, force: true });
@@ -192,7 +195,7 @@ export function MoyuCard() {
         setMoyuLoading(false);
       }
     },
-    []
+    [],
   );
 
   const loadHistory = useCallback(
@@ -243,7 +246,7 @@ export function MoyuCard() {
         setHistoryError(err instanceof Error ? err.message : "请求失败");
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {
@@ -351,7 +354,7 @@ export function MoyuCard() {
                     }:${idx}`}
                   >
                     <div className="flex items-start gap-2">
-                      <div className="shrink-0 font-semibold text-[#3F3E3E]/80">
+                      <div className="shrink-0 font-semibold text-[#3F3E3E]/80 w-[80px] text-right">
                         {formatEventDate(item.year, history)}
                       </div>
                       {item.link ? (
