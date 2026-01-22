@@ -15,13 +15,13 @@
 
 ## 开发、构建与校验命令
 
-- `pnpm install`：安装依赖（推荐 Node.js 版本与 Docker 一致：Node 20）。
+- `bun install`：安装依赖（推荐 Node.js 版本与 Docker 一致：Node 20）。
 - `cp .env.example .env`：准备本地环境变量（按你的 MySQL/Redis/邮箱/百度地图等配置修改）。
-- `pnpm dev`：启动本地开发。
-- `pnpm build`：生产构建。
-- `pnpm start`：本地启动生产构建产物。
-- `pnpm lint`：ESLint（Next Core Web Vitals + TypeScript）。
-- `pnpm typecheck`：TypeScript 类型检查（`tsc --noEmit`）。
+- `bun dev`：启动本地开发。
+- `bun run build`：生产构建。
+- `bun start`：本地启动生产构建产物。
+- `bun run lint`：ESLint（Next Core Web Vitals + TypeScript）。
+- `bun run typecheck`：TypeScript 类型检查（`tsc --noEmit`）。
 
 ### Docker（可选）
 
@@ -46,12 +46,13 @@
 ## 测试与质量保障
 
 - 当前仓库未配置自动化测试框架（没有 `*.test.*` / `*.spec.*`）。
-- 如确需引入测试：使用 `*.test.ts(x)` 命名，并新增 `pnpm test` 脚本与简短说明（避免一次性引入过重的测试栈）。
+- 如确需引入测试：使用 `*.test.ts(x)` 命名，并新增 `bun test` 脚本与简短说明（避免一次性引入过重的测试栈）。
 
 ## 提交与 PR 规范
 
+- **AI Agent 仅限只读操作**：只能查看 Git 信息（如 `git status`、`git log`、`git diff`），**禁止**执行任何修改操作（如 `commit`、`push`、`pull`、`merge`、`reset`、`revert` 等）。
 - 提交信息必须遵循下方《Git 提交信息命名方案（约束）》。
-- 变更尽量聚焦：一个提交/PR 解决一个问题，避免“顺手重构”造成 diff 扩散。
+- 变更尽量聚焦：一个提交/PR 解决一个问题，避免"顺手重构"造成 diff 扩散。
 - PR 说明：包含简短摘要，尽量关联 `plan/` 或 `issues/` 中对应条目；UI 变更附截图/录屏；涉及 `.env` / `sql/` / 鉴权时明确说明影响面与回滚方式。
 
 ## Git 提交信息命名方案（约束）
@@ -72,12 +73,11 @@
 - `docs`：文档/注释
 - `style`：仅格式调整（不影响逻辑），例如格式化、空格、排序
 - `test`：测试相关
-- `build`：构建/打包相关（Next.js、pnpm、Docker 等）
+- `build`：构建/打包相关（Next.js、bun、Docker 等）
 - `ci`：CI 配置相关
 - `chore`：杂项维护（脚本、工具、目录整理等）
-- `revert`：回滚某次提交
 
-### scope（可选，推荐）
+### scope（必填）
 
 - 只用小写英文与短横线（`kebab-case`），不加空格
 - 推荐范围（按需选用）：`app`、`api`、`components`、`ui`、`lib`、`db`、`auth`、`content`、`styles`、`public`、`sql`、`docker`、`config`、`deps`、`docs`、`plan`、`issues`
