@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Filter, Search, Sparkles, UserRound } from "lucide-react";
 
 import { BlogSidebar } from "@/components/legacy/blog/BlogSidebar";
 import { BlogCard, type BlogCardPost } from "@/components/legacy/blog/BlogCard";
 import { BlogCategoryFilter } from "@/components/legacy/blog/BlogCategoryFilter";
 import { BlogAnimeQuickLinks } from "@/components/legacy/blog/BlogAnimeQuickLinks";
+import { getAccountSummary } from "@/lib/account-summary-client";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
 
@@ -30,6 +33,15 @@ type BlogListResponse = {
 };
 
 type CategoryOption = { label: string; value: string };
+
+type UserMe = {
+  id: string;
+  username: string;
+  nickname: string;
+  avatarUrl: string | null;
+};
+
+type MobilePanel = "anime" | "filter" | "search";
 
 function stripHtml(html: string) {
   return (html || "")
@@ -85,6 +97,8 @@ function getPagerPages(totalPages: number, currentPage: number, maxPages = 7) {
 export function BlogIndex() {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
+  const [me, setMe] = useState<UserMe | null>(null);
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel | null>(null);
 
   const [categories, setCategories] = useState<CategoryOption[]>([
     { label: "全部", value: "0" },
@@ -169,6 +183,17 @@ export function BlogIndex() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    void getAccountSummary().then((summary) => {
+      if (cancelled) return;
+      setMe(summary.me ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     const media = window.matchMedia("(max-width: 768px)");
     const apply = () => setIsMobile(media.matches);
     apply();
@@ -206,56 +231,187 @@ export function BlogIndex() {
 
   const goToPost = (id: string) => router.push(`/blog/${id}`);
 
+  const toggleMobilePanel = (panel: MobilePanel) => {
+    setMobilePanel((current) => (current === panel ? null : panel));
+  };
+
+  const mobilePanelTitle = useMemo(() => {
+    if (mobilePanel === "anime") return "动漫专题";
+    if (mobilePanel === "filter") return "标签筛选";
+    if (mobilePanel === "search") return "搜索";
+    return "";
+  }, [mobilePanel]);
+
   return (
     <div className="blog">
+      {isMobile ? (
+        <>
+          <div
+            className="blog-mobile-bottom-bar"
+            role="navigation"
+            aria-label="博客工具栏"
+          >
+            <button
+              type="button"
+              className="blog-mobile-bottom-bar__item"
+              aria-label={mobilePanel === "anime" ? "关闭动漫专题" : "打开动漫专题"}
+              aria-pressed={mobilePanel === "anime"}
+              onClick={() => toggleMobilePanel("anime")}
+            >
+              <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+                <Sparkles />
+              </span>
+              <span className="blog-mobile-bottom-bar__text">动漫专题</span>
+            </button>
+
+            <button
+              type="button"
+              className="blog-mobile-bottom-bar__item"
+              aria-label={mobilePanel === "filter" ? "关闭标签筛选" : "打开标签筛选"}
+              aria-pressed={mobilePanel === "filter"}
+              onClick={() => toggleMobilePanel("filter")}
+            >
+              <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+                <Filter />
+              </span>
+              <span className="blog-mobile-bottom-bar__text">标签筛选</span>
+            </button>
+
+            <button
+              type="button"
+              className="blog-mobile-bottom-bar__item"
+              aria-label={mobilePanel === "search" ? "关闭搜索" : "打开搜索"}
+              aria-pressed={mobilePanel === "search"}
+              onClick={() => toggleMobilePanel("search")}
+            >
+              <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+                <Search />
+              </span>
+              <span className="blog-mobile-bottom-bar__text">搜索</span>
+            </button>
+
+            <button
+              type="button"
+              className="blog-mobile-bottom-bar__item"
+              aria-label={me?.nickname ? "打开个人中心" : "登录/注册"}
+              onClick={() => router.push(me?.nickname ? "/user" : "/login")}
+            >
+              <span className="blog-mobile-bottom-bar__avatar" aria-hidden="true">
+                {me?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={me.avatarUrl} alt="" />
+                ) : (
+                  <UserRound />
+                )}
+              </span>
+              <span className="blog-mobile-bottom-bar__text">
+                {me?.nickname ? "我的" : "登录"}
+              </span>
+            </button>
+          </div>
+
+          <Dialog
+            open={mobilePanel !== null}
+            onOpenChange={(open) => {
+              if (!open) setMobilePanel(null);
+            }}
+          >
+            <DialogContent
+              className="blog-toc-drawer"
+              // Radix/shadcn DialogContent ships with Tailwind `translate-x/y-[-50%]`.
+              // In Tailwind v4 this uses the CSS `translate` property (not `transform`),
+              // which stacks with our drawer `transform` and pushes the panel off-screen on mobile.
+              style={{ translate: "none" }}
+            >
+              <div className="blog-toc-drawer__header">
+                <DialogTitle className="blog-toc-drawer__title">
+                  {mobilePanelTitle}
+                </DialogTitle>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+                {mobilePanel === "filter" ? (
+                  <BlogCategoryFilter
+                    categories={categories}
+                    selected={selectedCategories}
+                    onToggle={onToggleCategory}
+                    onReset={onResetCategories}
+                  />
+                ) : null}
+
+                {mobilePanel === "anime" ? <BlogAnimeQuickLinks /> : null}
+
+                {mobilePanel === "search" ? (
+                  <section
+                    className="panel panel--aside glass-card"
+                    aria-label="搜索"
+                  >
+                    <div className="side-card__header">
+                      <h4 className="side-card__title">搜索</h4>
+                    </div>
+                    <div className="px-4 pb-4">
+                      <input
+                        value={keyword}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        placeholder="搜索标题或内容…"
+                        className="search-input h-10 w-full rounded-xl border border-white/60 bg-white/4 px-3 text-sm shadow-sm outline-none focus:border-white/80 backdrop-blur-md"
+                        style={{
+                          backgroundColor: "rgba(255, 255, 255, 0.04)",
+                          backdropFilter: "blur(4px)",
+                          WebkitBackdropFilter: "blur(4px)",
+                          boxShadow:
+                            "0 40px 50px -32px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.25)",
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          setPage(1);
+                          fetchPosts({ page: 1, keyword: e.currentTarget.value });
+                          setMobilePanel(null);
+                        }}
+                      />
+                    </div>
+                  </section>
+                ) : null}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      ) : null}
+
       <div className="blog-shell">
         <div className="blog-layout">
 	          <div className="main-col">
 	            <section className="panel">
 	              <div className="panel__header">
                 <h3 className="panel__title">最新文章</h3>
-                <div className="panel__header-center">
-                  <input
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    placeholder="搜索标题或内容…"
-                    className="search-input h-10 rounded-xl border border-white/60 bg-white/4 px-3 text-sm shadow-sm outline-none focus:border-white/80 backdrop-blur-md"
-                    style={{
-                      backgroundColor: 'rgba(255, 255, 255, 0.04)',
-                      backdropFilter: 'blur(4px)',
-                      WebkitBackdropFilter: 'blur(4px)',
-                      boxShadow: '0 40px 50px -32px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.25)'
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key !== "Enter") return;
-                      setPage(1);
-                      fetchPosts({ page: 1, keyword: e.currentTarget.value });
-                    }}
-                  />
-                </div>
+                {!isMobile ? (
+                  <div className="panel__header-center">
+                    <input
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      placeholder="搜索标题或内容…"
+                      className="search-input h-10 rounded-xl border border-white/60 bg-white/4 px-3 text-sm shadow-sm outline-none focus:border-white/80 backdrop-blur-md"
+                      style={{
+                        backgroundColor: "rgba(255, 255, 255, 0.04)",
+                        backdropFilter: "blur(4px)",
+                        WebkitBackdropFilter: "blur(4px)",
+                        boxShadow:
+                          "0 40px 50px -32px rgba(0, 0, 0, 0.05), inset 0 0 20px rgba(255, 255, 255, 0.25)",
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key !== "Enter") return;
+                        setPage(1);
+                        fetchPosts({ page: 1, keyword: e.currentTarget.value });
+                      }}
+                    />
+                  </div>
+                ) : null}
 
                 <div className="panel__header-right">
                   {total ? <span className="panel__count">共 {total} 篇</span> : null}
                   <span className="panel__hint">按发布时间展示</span>
                 </div>
 	              </div>
-
-                {isMobile ? (
-                  <div className="mt-3">
-                    <BlogCategoryFilter
-                      categories={categories}
-                      selected={selectedCategories}
-                      onToggle={onToggleCategory}
-                      onReset={onResetCategories}
-                    />
-                  </div>
-                ) : null}
-
-                {isMobile ? (
-                  <div className="mt-3">
-                    <BlogAnimeQuickLinks />
-                  </div>
-                ) : null}
 
 	              {loading ? <div className="latest-empty">加载中…</div> : null}
 	              {!loading && posts.length === 0 && pinnedPosts.length === 0 ? (

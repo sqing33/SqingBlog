@@ -197,7 +197,7 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
   return (
     <section
       ref={ref as unknown as ForwardedRef<HTMLElement>}
-      className="panel panel--aside user-account-panel glass-card"
+      className="panel panel--aside user-account-panel"
     >
       <div className="side-card__header">
         <h4 className="side-card__title">账号</h4>

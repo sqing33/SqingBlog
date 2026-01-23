@@ -195,23 +195,28 @@ function RootComment({
               <CommentContent content={node.content} />
             </div>
 
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-              {hasChildren ? (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    if (collapsed) setPage(1);
-                    setCollapsed((v) => !v);
-                  }}
-                >
-                  {collapsed ? `展开 ${children.length} 条回复` : "收起回复"}
-                </Button>
-              ) : (
-                <span />
-              )}
+            {/*
+              Mobile: the action row can wrap into 2 lines ("展开回复" + buttons).
+              When it wraps, the second line used to align left due to `justify-between`.
+              Stack on mobile and keep the button group right-aligned.
+            */}
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="sm:flex-1">
+                {hasChildren ? (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      if (collapsed) setPage(1);
+                      setCollapsed((v) => !v);
+                    }}
+                  >
+                    {collapsed ? `展开 ${children.length} 条回复` : "收起回复"}
+                  </Button>
+                ) : null}
+              </div>
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
                 <Button
                   size="sm"
                   variant={node.likedByMe ? "default" : "secondary"}
@@ -292,9 +297,11 @@ function RootComment({
 export function Comments({
   kind,
   targetId,
+  editorPreview = "live",
 }: {
   kind: "blog" | "news";
   targetId: string;
+  editorPreview?: "edit" | "preview" | "live";
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -457,7 +464,7 @@ export function Comments({
           value={content}
           onChange={setContent}
           height={200}
-          preview="live"
+          preview={editorPreview}
           placeholder="写下你的评论（支持 Markdown）"
         />
 
@@ -498,7 +505,7 @@ export function Comments({
             value={replyContent}
             onChange={setReplyContent}
             height={220}
-            preview="live"
+            preview={editorPreview}
             placeholder="写下你的回复（支持 Markdown）"
           />
           <DialogFooter>

@@ -267,8 +267,10 @@ export function HomeWithCarousel() {
 
   return (
     <div className="relative h-[100svh] w-full overflow-hidden">
-      <div className="fixed right-6 top-6 z-50">
-        <HomeMusicPlayer />
+      <div className="fixed right-6 top-6 z-50 pointer-events-none md:pointer-events-auto">
+        <div className="pointer-events-auto">
+          <HomeMusicPlayer />
+        </div>
       </div>
       <div className="relative h-[100svh] w-full overflow-hidden">
         <div
@@ -293,7 +295,7 @@ export function HomeWithCarousel() {
                   />
                 </div>
 
-                <div className="flex w-40 flex-col items-center gap-3 text-center sm:w-48 md:w-56">
+                <div className="flex flex-col items-center gap-3 text-center sm:w-48 md:w-56 w-full px-4">
                   <div className="text-[#3F3E3E] text-lg font-semibold tracking-wide sm:text-xl md:text-2xl">
                     三青🎡
                   </div>
@@ -322,11 +324,11 @@ export function HomeWithCarousel() {
                 </div>
               </div>
 
-              <div className="flex w-full justify-center md:col-start-1 md:row-start-1 md:justify-center">
+              <div className="hidden md:flex w-full justify-center md:col-start-1 md:row-start-1 md:justify-center">
                 <MoyuCard />
               </div>
 
-              <div className="hidden md:flex md:col-start-3 md:row-start-1 md:h-full md:items-center md:justify-center">
+              <div className="flex md:col-start-3 md:row-start-1 md:h-full md:items-center md:justify-center">
                 <HomeRightPanel />
               </div>
             </div>
@@ -343,10 +345,10 @@ export function HomeWithCarousel() {
         </div>
       </div>
 
-      {showScrollHint ? (
+{showScrollHint ? (
         <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2">
           {duanzi ? (
-            <div className="max-w-[min(32rem,90vw)] px-4 text-center font-medium text-[#3F3E3E] text-sm drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)]">
+            <div className="w-[calc(100vw-20px)] px-[10px] text-center font-medium text-[#3F3E3E] text-sm drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] md:max-w-[min(32rem,90vw)] md:px-4">
               {duanzi}
             </div>
           ) : null}

@@ -5,7 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
-import { ArrowLeft, MessageCircle, Share2, Star } from "lucide-react";
+import {
+  ArrowLeft,
+  List,
+  MessageCircle,
+  Share2,
+  Star,
+  UserRound,
+} from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { initCodeCollapse } from "@/lib/codeCollapse";
@@ -13,6 +20,7 @@ import { getAccountSummary } from "@/lib/account-summary-client";
 import { Comments } from "@/components/comments/Comments";
 import { Edit } from "lucide-react";
 import { UserAccount } from "@/components/legacy/blog/UserAccount";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -88,10 +96,12 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
   const commentsRef = useRef<HTMLDivElement | null>(null);
 
   const [toc, setToc] = useState<TocItem[]>([]);
+  const [tocOpen, setTocOpen] = useState(false);
   const [me, setMe] = useState<UserMe | null>(null);
   const [shareHint, setShareHint] = useState<string | null>(null);
   const [collectHint, setCollectHint] = useState<string | null>(null);
   const [collecting, setCollecting] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const readingMinutes = useMemo(() => {
     const raw = post.contentRaw || "";
@@ -109,6 +119,21 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
     return () => {
       cancelled = true;
     };
+  }, []);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 1000px)");
+    const sync = () => setIsMobile(mql.matches);
+    sync();
+
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", sync);
+      return () => mql.removeEventListener("change", sync);
+    }
+
+    // Safari fallback.
+    mql.addListener(sync);
+    return () => mql.removeListener(sync);
   }, []);
 
   useEffect(() => {
@@ -136,402 +161,436 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
   }, [post.id, post.contentHtml]);
 
   useEffect(() => {
-    const setup = () => {
-      if (!heroRef.current || !accountRef.current) return;
+    const mm = gsap.matchMedia();
 
-      const heroEl = heroRef.current;
-      const accountEl = accountRef.current;
+    mm.add("(min-width: 1001px)", () => {
+      const setup = () => {
+        if (!heroRef.current || !accountRef.current) return;
 
-      const resolveScroller = () => {
-        const candidate = document.querySelector(
-          ".el-scrollbar__wrap",
-        ) as HTMLElement | null;
-        if (!candidate) return null;
+        const heroEl = heroRef.current;
+        const accountEl = accountRef.current;
 
-        const style = window.getComputedStyle(candidate);
-        const overflowY = style.overflowY;
-        const overflowScrollable =
-          overflowY === "auto" || overflowY === "scroll";
-        if (!overflowScrollable) return null;
+        const resolveScroller = () => {
+          const candidate = document.querySelector(
+            ".el-scrollbar__wrap",
+          ) as HTMLElement | null;
+          if (!candidate) return null;
 
-        // Use the wrapper only if it behaves like a viewport-sized scroll container.
-        // If it expands with content (auto height), scrolling happens on window/document instead.
-        const viewportHeight =
-          window.innerHeight ||
-          document.documentElement.clientHeight ||
-          candidate.clientHeight;
-        const isViewportSized =
-          Math.abs(candidate.clientHeight - viewportHeight) <= 4;
-        return isViewportSized ? candidate : null;
-      };
+          const style = window.getComputedStyle(candidate);
+          const overflowY = style.overflowY;
+          const overflowScrollable =
+            overflowY === "auto" || overflowY === "scroll";
+          if (!overflowScrollable) return null;
 
-      const scrollerEl = resolveScroller();
+          // Use the wrapper only if it behaves like a viewport-sized scroll container.
+          // If it expands with content (auto height), scrolling happens on window/document instead.
+          const viewportHeight =
+            window.innerHeight ||
+            document.documentElement.clientHeight ||
+            candidate.clientHeight;
+          const isViewportSized =
+            Math.abs(candidate.clientHeight - viewportHeight) <= 4;
+          return isViewportSized ? candidate : null;
+        };
 
-      const existing = ScrollTrigger.getById("blog-page-hero");
-      existing?.kill();
+        const scrollerEl = resolveScroller();
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          id: "blog-page-hero",
-          ...(scrollerEl ? { scroller: scrollerEl } : {}),
-          trigger: "body",
-          start: 0,
-          end: 300,
-          scrub: 1,
-        },
-      });
+        const existing = ScrollTrigger.getById("blog-page-hero");
+        existing?.kill();
 
-      tl.to(
-        heroEl,
-        {
-          x: () => {
-            const rect = heroEl.getBoundingClientRect();
-            return -rect.left;
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            id: "blog-page-hero",
+            ...(scrollerEl ? { scroller: scrollerEl } : {}),
+            trigger: "body",
+            start: 0,
+            end: 300,
+            scrub: 1,
           },
-          y: -50,
-          width: () => window.innerWidth - 182,
-          height: 50,
-          borderRadius: 0,
-          padding: 0,
-          borderLeftWidth: 0,
-          transformOrigin: "left top",
-          duration: 1,
-        },
-        0,
-      );
-
-      tl.to(
-        heroEl.querySelector(".blog-hero__inner"),
-        {
-          padding: 0,
-          height: 50,
-          borderRadius: 0,
-          transformOrigin: "left center",
-          duration: 1.5,
-        },
-        0,
-      );
-
-      tl.to(
-        heroEl.querySelector(".blog-hero__label"),
-        {
-          autoAlpha: 0,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
-
-      const titleContainerEl = heroEl.querySelector(
-        ".blog-hero_title",
-      ) as HTMLElement | null;
-      const titleEl = heroEl.querySelector(".blog-title") as HTMLElement | null;
-      const coverEl = heroEl.querySelector(
-        ".blog-cover",
-      ) as HTMLImageElement | null;
-
-      const heroRect = heroEl.getBoundingClientRect();
-      const innerEl = heroEl.querySelector(".blog-hero__inner");
-      const innerStyle = innerEl ? window.getComputedStyle(innerEl) : null;
-      const innerPaddingLeft = innerStyle
-        ? parseFloat(innerStyle.paddingLeft) || 0
-        : 0;
-
-      let targetTitleWidth = 0;
-      if (titleEl) {
-        const originalFontSize = titleEl.style.fontSize;
-        const originalWidth = titleEl.style.width;
-        const originalWhiteSpace = titleEl.style.whiteSpace;
-
-        titleEl.style.fontSize = "24px";
-        titleEl.style.width = "max-content";
-        titleEl.style.whiteSpace = "nowrap";
-        const rectWidth = titleEl.getBoundingClientRect().width;
-        const scrollWidth = titleEl.scrollWidth;
-        targetTitleWidth = Math.ceil(Math.max(rectWidth, scrollWidth)) + 8;
-
-        titleEl.style.fontSize = originalFontSize;
-        titleEl.style.width = originalWidth;
-        titleEl.style.whiteSpace = originalWhiteSpace;
-      }
-
-      let targetCoverWidth = 0;
-      if (coverEl) {
-        const naturalWidth = coverEl.naturalWidth || coverEl.width || 280;
-        const naturalHeight = coverEl.naturalHeight || coverEl.height || 200;
-        const targetHeight = 45;
-        targetCoverWidth = (naturalWidth / naturalHeight) * targetHeight;
-      }
-
-      const totalTargetWidth =
-        targetTitleWidth + (targetCoverWidth ? targetCoverWidth + 10 : 0);
-
-      if (titleContainerEl) {
-        const containerRect = titleContainerEl.getBoundingClientRect();
-        const currentLeft = containerRect.left;
-        const windowWidth = window.innerWidth;
-
-        const finalX =
-          windowWidth / 2 -
-          totalTargetWidth / 2 -
-          currentLeft +
-          heroRect.left +
-          innerPaddingLeft;
+        });
 
         tl.to(
-          titleContainerEl,
+          heroEl,
           {
-            x: finalX,
-            y: -20,
+            x: () => {
+              const rect = heroEl.getBoundingClientRect();
+              return -rect.left;
+            },
+            y: -50,
+            width: () => window.innerWidth - 200,
+            height: 50,
+            borderRadius: 0,
+            padding: 0,
+            borderLeftWidth: 0,
+            transformOrigin: "left top",
+            duration: 1,
+          },
+          0,
+        );
+
+        tl.to(
+          heroEl.querySelector(".blog-hero__inner"),
+          {
+            padding: 0,
+            height: 50,
+            borderRadius: 0,
+            transformOrigin: "left center",
+            duration: 1.5,
+          },
+          0,
+        );
+
+        // When collapsing into the top nav layout, fade the seam between
+        // the title block (right border) and the account block (left border).
+        tl.to(
+          heroEl.querySelector(".blog-hero__inner"),
+          {
+            borderRightColor: "rgba(17, 24, 39, 0)",
             transformOrigin: "left center",
             duration: 1,
           },
           0,
         );
-      }
 
-      if (titleEl) {
         tl.to(
-          titleEl,
+          heroEl.querySelector(".blog-hero__label"),
           {
-            fontSize: 24,
-            width: targetTitleWidth,
+            autoAlpha: 0,
+            transformOrigin: "left center",
             duration: 1,
           },
           0,
         );
-      }
 
-      if (coverEl) {
+        const titleContainerEl = heroEl.querySelector(
+          ".blog-hero_title",
+        ) as HTMLElement | null;
+        const titleEl = heroEl.querySelector(
+          ".blog-title",
+        ) as HTMLElement | null;
+        const coverEl = heroEl.querySelector(
+          ".blog-cover",
+        ) as HTMLImageElement | null;
+
+        const heroRect = heroEl.getBoundingClientRect();
+        const innerEl = heroEl.querySelector(".blog-hero__inner");
+        const innerStyle = innerEl ? window.getComputedStyle(innerEl) : null;
+        const innerPaddingLeft = innerStyle
+          ? parseFloat(innerStyle.paddingLeft) || 0
+          : 0;
+
+        let targetTitleWidth = 0;
+        if (titleEl) {
+          const originalFontSize = titleEl.style.fontSize;
+          const originalWidth = titleEl.style.width;
+          const originalWhiteSpace = titleEl.style.whiteSpace;
+
+          titleEl.style.fontSize = "24px";
+          titleEl.style.width = "max-content";
+          titleEl.style.whiteSpace = "nowrap";
+          const rectWidth = titleEl.getBoundingClientRect().width;
+          const scrollWidth = titleEl.scrollWidth;
+          targetTitleWidth = Math.ceil(Math.max(rectWidth, scrollWidth)) + 8;
+
+          titleEl.style.fontSize = originalFontSize;
+          titleEl.style.width = originalWidth;
+          titleEl.style.whiteSpace = originalWhiteSpace;
+        }
+
+        let targetCoverWidth = 0;
+        if (coverEl) {
+          const naturalWidth = coverEl.naturalWidth || coverEl.width || 280;
+          const naturalHeight = coverEl.naturalHeight || coverEl.height || 200;
+          const targetHeight = 45;
+          targetCoverWidth = (naturalWidth / naturalHeight) * targetHeight;
+        }
+
+        const totalTargetWidth =
+          targetTitleWidth + (targetCoverWidth ? targetCoverWidth + 10 : 0);
+
+        if (titleContainerEl) {
+          const containerRect = titleContainerEl.getBoundingClientRect();
+          const currentLeft = containerRect.left;
+          const windowWidth = window.innerWidth;
+
+          const finalX =
+            windowWidth / 2 -
+            totalTargetWidth / 2 -
+            currentLeft +
+            heroRect.left +
+            innerPaddingLeft;
+
+          tl.to(
+            titleContainerEl,
+            {
+              x: finalX,
+              y: -20,
+              transformOrigin: "left center",
+              duration: 1,
+            },
+            0,
+          );
+        }
+
+        if (titleEl) {
+          tl.to(
+            titleEl,
+            {
+              fontSize: 24,
+              width: targetTitleWidth,
+              duration: 1,
+            },
+            0,
+          );
+        }
+
+        if (coverEl) {
+          tl.to(
+            coverEl,
+            {
+              width: targetCoverWidth,
+              height: 45,
+              borderRadius: 3,
+              marginTop: 2,
+              marginLeft: 10,
+              duration: 1,
+            },
+            0,
+          );
+        }
+
         tl.to(
-          coverEl,
+          heroEl.querySelector(".blog-meta"),
           {
-            width: targetCoverWidth,
-            height: 45,
-            borderRadius: 3,
-            marginTop: 2,
+            y: -95,
+            marginTop: 0,
+            marginLeft: 70,
+            transformOrigin: "left center",
+            duration: 1,
+          },
+          0,
+        );
+
+        // Fade out category + reading time (keep author + time like the Vue version)
+        const metaEl = heroEl.querySelector(".blog-meta");
+        if (metaEl) {
+          const metaItems = metaEl.querySelectorAll(".blog-meta__item");
+          const metaDots = metaEl.querySelectorAll(".blog-meta__dot");
+
+          if (metaDots[1]) {
+            tl.to(
+              metaDots[1],
+              {
+                autoAlpha: 0,
+                duration: 1,
+              },
+              0,
+            );
+          }
+
+          if (metaItems[2]) {
+            tl.to(
+              metaItems[2],
+              {
+                autoAlpha: 0,
+                duration: 1,
+              },
+              0,
+            );
+          }
+          if (metaDots[2]) {
+            tl.to(
+              metaDots[2],
+              {
+                autoAlpha: 0,
+                duration: 1,
+              },
+              0,
+            );
+          }
+
+          if (metaItems[3]) {
+            tl.to(
+              metaItems[3],
+              {
+                autoAlpha: 0,
+                duration: 1,
+              },
+              0,
+            );
+          }
+          if (metaDots[3]) {
+            tl.to(
+              metaDots[3],
+              {
+                autoAlpha: 0,
+                duration: 1,
+              },
+              0,
+            );
+          }
+        }
+
+        tl.to(
+          heroEl.querySelector(".blog-hero__back"),
+          {
+            x: 80,
+            y: 70,
+            width: 40,
+            height: 40,
+            borderRadius: 20,
+            transformOrigin: "left center",
+            duration: 1,
+          },
+          0,
+        );
+
+        tl.to(
+          heroEl.querySelector(".el-icon"),
+          {
+            x: 0,
+            y: 0,
+            transformOrigin: "left center",
+            duration: 1,
+          },
+          0,
+        );
+
+        // Right account card
+        tl.to(
+          accountEl,
+          {
+            x: () => {
+              const rect = accountEl.getBoundingClientRect();
+              const currentRight = rect.right;
+              const windowWidth = window.innerWidth;
+              return windowWidth - (currentRight - 150);
+            },
+            y: -10,
+            width: 200,
+            borderRadius: 0,
+            backgroundColor: "rgba(255, 255, 255, 0.92)",
+            borderLeftColor: "rgba(17, 24, 39, 0)",
+            padding: 0,
+            transformOrigin: "right top",
+            duration: 1,
+          },
+          0,
+        );
+
+        tl.to(
+          accountEl,
+          {
+            height: 50,
+            transformOrigin: "right top",
+            duration: 1.5,
+          },
+          0,
+        );
+
+        tl.to(
+          accountEl.querySelector(".user-card"),
+          {
+            top: -35,
+            transformOrigin: "left center",
+            duration: 1,
+          },
+          0,
+        );
+
+        tl.to(
+          accountEl.querySelector(".user-card__more"),
+          {
+            autoAlpha: 0,
+            transformOrigin: "left center",
+            duration: 0.5,
+          },
+          0,
+        );
+
+        tl.to(
+          accountEl.querySelector(".user-card__avatar"),
+          {
+            width: 40,
+            height: 40,
             marginLeft: 10,
+            marginTop: 5,
+            transformOrigin: "left center",
             duration: 1,
           },
           0,
         );
-      }
 
-      tl.to(
-        heroEl.querySelector(".blog-meta"),
-        {
-          y: -95,
-          marginTop: 0,
-          marginLeft: 70,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
-
-      // Fade out category + reading time (keep author + time like the Vue version)
-      const metaEl = heroEl.querySelector(".blog-meta");
-      if (metaEl) {
-        const metaItems = metaEl.querySelectorAll(".blog-meta__item");
-        const metaDots = metaEl.querySelectorAll(".blog-meta__dot");
-
-        if (metaDots[1]) {
-          tl.to(
-            metaDots[1],
-            {
-              autoAlpha: 0,
-              duration: 1,
-            },
-            0,
-          );
-        }
-
-        if (metaItems[2]) {
-          tl.to(
-            metaItems[2],
-            {
-              autoAlpha: 0,
-              duration: 1,
-            },
-            0,
-          );
-        }
-        if (metaDots[2]) {
-          tl.to(
-            metaDots[2],
-            {
-              autoAlpha: 0,
-              duration: 1,
-            },
-            0,
-          );
-        }
-
-        if (metaItems[3]) {
-          tl.to(
-            metaItems[3],
-            {
-              autoAlpha: 0,
-              duration: 1,
-            },
-            0,
-          );
-        }
-        if (metaDots[3]) {
-          tl.to(
-            metaDots[3],
-            {
-              autoAlpha: 0,
-              duration: 1,
-            },
-            0,
-          );
-        }
-      }
-
-      tl.to(
-        heroEl.querySelector(".blog-hero__back"),
-        {
-          x: 80,
-          y: 70,
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
-
-      tl.to(
-        heroEl.querySelector(".el-icon"),
-        {
-          x: 0,
-          y: 0,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
-
-      // Right account card
-      tl.to(
-        accountEl,
-        {
-          x: () => {
-            const rect = accountEl.getBoundingClientRect();
-            const currentRight = rect.right;
-            const windowWidth = window.innerWidth;
-            return windowWidth - (currentRight - 150);
+        tl.to(
+          accountEl.querySelector(".user-card__name"),
+          {
+            margin: 0,
+            transformOrigin: "left center",
+            duration: 1,
           },
-          y: -10,
-          width: 200,
-          borderRadius: 0,
-          backgroundColor: "rgba(255, 255, 255, 0.92)",
-          padding: 0,
-          transformOrigin: "right top",
-          duration: 1,
-        },
-        0,
-      );
+          0,
+        );
 
-      tl.to(
-        accountEl,
-        {
-          height: 50,
-          transformOrigin: "right top",
-          duration: 1.5,
-        },
-        0,
-      );
+        tl.to(
+          accountEl.querySelector(".side-card__header"),
+          {
+            autoAlpha: 0,
+            transformOrigin: "left center",
+            duration: 0.5,
+          },
+          0,
+        );
 
-      tl.to(
-        accountEl.querySelector(".user-card"),
-        {
-          top: -46,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
+        tl.to(
+          accountEl.querySelector(".user-card__desc"),
+          {
+            autoAlpha: 0,
+            height: 0,
+            transformOrigin: "left center",
+            duration: 0.5,
+          },
+          0,
+        );
 
-      tl.to(
-        accountEl.querySelector(".user-card__avatar"),
-        {
-          width: 40,
-          height: 40,
-          marginLeft: 10,
-          marginTop: 5,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
+        return () => {
+          tl.kill();
+          ScrollTrigger.getById("blog-page-hero")?.kill();
+        };
+      };
 
-      tl.to(
-        accountEl.querySelector(".user-card__name"),
-        {
-          margin: 0,
-          transformOrigin: "left center",
-          duration: 1,
-        },
-        0,
-      );
+      let cleanup: void | (() => void);
+      let cancelled = false;
 
-      tl.to(
-        accountEl.querySelector(".side-card__header"),
-        {
-          autoAlpha: 0,
-          transformOrigin: "left center",
-          duration: 0.5,
-        },
-        0,
-      );
+      const runSetup = () => {
+        if (cancelled) return;
+        const fontsReady = (
+          document as unknown as { fonts?: { ready?: Promise<unknown> } }
+        ).fonts?.ready;
+        if (!fontsReady) {
+          cleanup = setup();
+          return;
+        }
 
-      tl.to(
-        accountEl.querySelector(".user-card__desc"),
-        {
-          autoAlpha: 0,
-          height: 0,
-          transformOrigin: "left center",
-          duration: 0.5,
-        },
-        0,
-      );
+        fontsReady
+          .catch(() => undefined)
+          .then(() => {
+            if (cancelled) return;
+            cleanup = setup();
+          });
+      };
+
+      const timeout = window.setTimeout(runSetup, 500);
 
       return () => {
-        tl.kill();
+        cancelled = true;
+        window.clearTimeout(timeout);
+        cleanup?.();
         ScrollTrigger.getById("blog-page-hero")?.kill();
       };
-    };
-
-    let cleanup: void | (() => void);
-    let cancelled = false;
-
-    const runSetup = () => {
-      if (cancelled) return;
-      const fontsReady = (
-        document as unknown as { fonts?: { ready?: Promise<unknown> } }
-      ).fonts?.ready;
-      if (!fontsReady) {
-        cleanup = setup();
-        return;
-      }
-
-      fontsReady
-        .catch(() => undefined)
-        .then(() => {
-          if (cancelled) return;
-          cleanup = setup();
-        });
-    };
-
-    const timeout = window.setTimeout(runSetup, 500);
+    });
 
     return () => {
-      cancelled = true;
-      window.clearTimeout(timeout);
-      cleanup?.();
+      mm.revert();
       ScrollTrigger.getById("blog-page-hero")?.kill();
     };
   }, [post.id]);
@@ -543,6 +602,88 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
   const scrollToHeading = (id: string) => {
     const el = document.getElementById(id);
     el?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const renderBlogActions = () => {
+    return (
+      <div className="blog-actions-wrapper">
+        <nav className="blog-actions">
+          {me && me.id === post.user_id ? (
+            <button
+              type="button"
+              className="blog-action"
+              onClick={() => router.push(`/blog/${post.id}/edit`)}
+            >
+              <div className="blog-action__circle">
+                <Edit />
+              </div>
+              <span className="blog-action__text">编辑</span>
+            </button>
+          ) : null}
+
+          <button type="button" className="blog-action" onClick={doShare}>
+            <div className="blog-action__circle">
+              <Share2 />
+            </div>
+            <span className="blog-action__text">{shareHint || "分享"}</span>
+          </button>
+
+          <button
+            type="button"
+            className="blog-action"
+            onClick={collect}
+            disabled={collecting}
+          >
+            <div className="blog-action__circle">
+              <Star />
+            </div>
+            <span className="blog-action__text">
+              {collectHint || (collecting ? "收藏中" : "收藏")}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="blog-action"
+            onClick={scrollToComments}
+          >
+            <div className="blog-action__circle">
+              <MessageCircle />
+            </div>
+            <span className="blog-action__text">评论</span>
+          </button>
+        </nav>
+      </div>
+    );
+  };
+
+  const renderTocSection = (
+    afterItemClick?: () => void,
+    options?: { showTitle?: boolean; className?: string },
+  ) => {
+    const showTitle = options?.showTitle !== false;
+    return (
+      <section className={cn("blog-toc", options?.className)}>
+        {showTitle ? <h4 className="blog-toc__title">文章目录</h4> : null}
+        <ul className="toc">
+          {toc.map((item) => (
+            <li
+              key={item.id}
+              className={cn("toc-item", `toc-item--l${item.level}`)}
+              onClick={() => {
+                scrollToHeading(item.id);
+                afterItemClick?.();
+              }}
+            >
+              {item.text}
+            </li>
+          ))}
+          {!toc.length ? (
+            <li className="toc-item toc-item--empty">暂无目录</li>
+          ) : null}
+        </ul>
+      </section>
+    );
   };
 
   const doShare = async () => {
@@ -595,6 +736,101 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
         } as never
       }
     >
+      <div
+        className="blog-mobile-bottom-bar"
+        role="navigation"
+        aria-label="文章工具栏"
+      >
+        <Link
+          className="blog-mobile-bottom-bar__item"
+          href="/?panel=blog"
+          aria-label="返回博客列表"
+        >
+          <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+            <ArrowLeft />
+          </span>
+          <span className="blog-mobile-bottom-bar__text">返回</span>
+        </Link>
+
+        <button
+          type="button"
+          className="blog-mobile-bottom-bar__item"
+          aria-label="滚动到评论"
+          onClick={scrollToComments}
+        >
+          <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+            <MessageCircle />
+          </span>
+          <span className="blog-mobile-bottom-bar__text">评论</span>
+        </button>
+
+        <button
+          type="button"
+          className="blog-mobile-bottom-bar__item"
+          aria-label={collecting ? "收藏中" : "收藏"}
+          onClick={collect}
+          disabled={collecting}
+        >
+          <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+            <Star />
+          </span>
+          <span className="blog-mobile-bottom-bar__text">
+            {collectHint || (collecting ? "收藏中" : "收藏")}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="blog-mobile-bottom-bar__item"
+          aria-label={tocOpen ? "关闭目录" : "打开目录"}
+          onClick={() => setTocOpen((prev) => !prev)}
+        >
+          <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+            <List />
+          </span>
+          <span className="blog-mobile-bottom-bar__text">目录</span>
+        </button>
+
+        <button
+          type="button"
+          className="blog-mobile-bottom-bar__item"
+          aria-label={me?.nickname ? "打开个人中心" : "登录/注册"}
+          onClick={() => router.push(me?.nickname ? "/user" : "/login")}
+        >
+          <span className="blog-mobile-bottom-bar__avatar" aria-hidden="true">
+            {me?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={me.avatarUrl} alt="" />
+            ) : (
+              <UserRound />
+            )}
+          </span>
+          <span className="blog-mobile-bottom-bar__text">
+            {me?.nickname ? "我的" : "登录"}
+          </span>
+        </button>
+      </div>
+
+      <Dialog open={tocOpen} onOpenChange={setTocOpen}>
+        <DialogContent
+          className="blog-toc-drawer"
+          // Radix/shadcn DialogContent ships with Tailwind `translate-x/y-[-50%]`.
+          // In Tailwind v4 this uses the CSS `translate` property (not `transform`),
+          // which stacks with our drawer `transform` and pushes the panel off-screen on mobile.
+          style={{ translate: "none" }}
+        >
+          <div className="blog-toc-drawer__header">
+            <DialogTitle className="blog-toc-drawer__title">
+              文章目录
+            </DialogTitle>
+          </div>
+          {renderTocSection(() => setTocOpen(false), {
+            showTitle: false,
+            className: "blog-toc--drawer",
+          })}
+        </DialogContent>
+      </Dialog>
+
       <div className="blog-shell">
         <div className="blog-layout">
           <div className="main-col">
@@ -658,8 +894,14 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
                 </div>
               </article>
 
+              <div className="blog-mobile-widgets">{renderBlogActions()}</div>
+
               <div ref={commentsRef} className="mt-6">
-                <Comments kind="blog" targetId={post.id} />
+                <Comments
+                  kind="blog"
+                  targetId={post.id}
+                  editorPreview={isMobile ? "edit" : "live"}
+                />
               </div>
             </section>
           </div>
@@ -668,78 +910,9 @@ export function BlogPage({ post }: { post: BlogDetailViewModel }) {
             <div className="blog-sidebar">
               <UserAccount ref={accountRef} showCta={false} />
 
-              <div className="blog-actions-wrapper">
-                <nav className="blog-actions">
-                  {me && me.id === post.user_id ? (
-                    <button
-                      type="button"
-                      className="blog-action"
-                      onClick={() => router.push(`/blog/${post.id}/edit`)}
-                    >
-                      <div className="blog-action__circle">
-                        <Edit />
-                      </div>
-                      <span className="blog-action__text">编辑</span>
-                    </button>
-                  ) : null}
+              {renderBlogActions()}
 
-                  <button
-                    type="button"
-                    className="blog-action"
-                    onClick={doShare}
-                  >
-                    <div className="blog-action__circle">
-                      <Share2 />
-                    </div>
-                    <span className="blog-action__text">
-                      {shareHint || "分享"}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="blog-action"
-                    onClick={collect}
-                    disabled={collecting}
-                  >
-                    <div className="blog-action__circle">
-                      <Star />
-                    </div>
-                    <span className="blog-action__text">
-                      {collectHint || (collecting ? "收藏中" : "收藏")}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="blog-action"
-                    onClick={scrollToComments}
-                  >
-                    <div className="blog-action__circle">
-                      <MessageCircle />
-                    </div>
-                    <span className="blog-action__text">评论</span>
-                  </button>
-                </nav>
-              </div>
-
-              <section className="blog-toc">
-                <h4 className="blog-toc__title">文章目录</h4>
-                <ul className="toc">
-                  {toc.map((item) => (
-                    <li
-                      key={item.id}
-                      className={cn("toc-item", `toc-item--l${item.level}`)}
-                      onClick={() => scrollToHeading(item.id)}
-                    >
-                      {item.text}
-                    </li>
-                  ))}
-                  {!toc.length ? (
-                    <li className="toc-item toc-item--empty">暂无目录</li>
-                  ) : null}
-                </ul>
-              </section>
+              {renderTocSection()}
             </div>
           </div>
         </div>

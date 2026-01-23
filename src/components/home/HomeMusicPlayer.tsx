@@ -7,6 +7,7 @@ import {
   RefreshCcw,
   SkipBack,
   SkipForward,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -106,6 +107,7 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const trackList = tracks ?? [];
   const activeTrack = trackList[activeIndex];
@@ -309,11 +311,137 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
     e.stopPropagation();
   };
 
+  const handleMobileExpand = async (e: SyntheticEvent) => {
+    e.stopPropagation();
+    if (!mobileExpanded) {
+      setMobileExpanded(true);
+      if (!isPlaying) {
+        await handleTogglePlay();
+      }
+    }
+  };
+
+  const handleMobileCollapse = (e: SyntheticEvent) => {
+    e.stopPropagation();
+    setMobileExpanded(false);
+  };
+
   return (
     <>
+      {/* Mobile Mobile Compact/Expanded Widget */}
       <div
         className={cn(
-          "w-[min(20rem,92vw)] overflow-hidden rounded-2xl border border-black/15 bg-white/95 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)]",
+          "md:hidden fixed z-50 transition-all duration-300 ease-spring",
+          mobileExpanded
+            ? "inset-x-4 top-4 w-auto rounded-2xl border border-black/15 bg-white/95 shadow-xl p-3"
+            : "right-4 top-4 size-12 rounded-xl border border-black/15 bg-white/90 shadow-lg overflow-hidden"
+        )}
+      >
+        {!mobileExpanded ? (
+          <button
+            type="button"
+            aria-label="展开音乐播放器"
+            className="size-full flex items-center justify-center relative"
+            onClick={handleMobileExpand}
+          >
+            <div
+              className={cn(
+                "relative size-9 rounded-full overflow-hidden shadow-sm ring-1 ring-black/5 transition-transform duration-[3s] linear",
+                isPlaying ? "animate-spin" : ""
+              )}
+              style={{ animationDuration: "10s" }}
+            >
+               {coverDataUrl ? (
+                <Image
+                  src={coverDataUrl}
+                  alt="cover"
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <Disc3 className="size-full p-1.5 text-[#3F3E3E]/40 bg-black/5" />
+              )}
+            </div>
+          </button>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div
+              className="relative size-12 shrink-0 rounded-full overflow-hidden border border-black/10"
+              onClick={async (e) => {
+                e.stopPropagation();
+                await handleTogglePlay();
+              }}
+            >
+               {coverDataUrl ? (
+                <Image
+                  src={coverDataUrl}
+                  alt="cover"
+                  fill
+                  sizes="48px"
+                  className={cn(
+                    "object-cover transition-opacity",
+                    isPlaying ? "opacity-100" : "opacity-80"
+                  )}
+                  unoptimized
+                />
+              ) : (
+                <Disc3 className="h-full w-full p-2 text-[#3F3E3E]/40 bg-gray-100" />
+              )}
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                {isPlaying ? (
+                  <Pause className="size-5 text-white drop-shadow-md" />
+                ) : (
+                  <Play className="size-5 text-white drop-shadow-md ml-0.5" />
+                )}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              aria-label="打开音乐播放器详情"
+              className="flex-1 min-w-0 flex flex-col justify-center text-left"
+              onClick={async (e) => {
+                e.stopPropagation();
+                setOpen(true);
+                if (!hasLoaded) {
+                  await loadTracks({
+                    autoplay: false,
+                    prevFile: activeTrack?.file ?? null,
+                    wasPlaying: isPlaying,
+                  });
+                }
+              }}
+            >
+              <div className="truncate font-medium text-[#3F3E3E] text-sm">
+                 {hasTracks
+                  ? (activeTrack?.title ?? "正在播放")
+                  : hasLoaded
+                  ? "无音乐"
+                  : "点击播放"}
+              </div>
+              <div className="text-xs text-[#3F3E3E]/60">
+                 {formatTime(currentTime)} / {duration ? formatTime(duration) : "--:--"}
+              </div>
+            </button>
+
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0 size-8 text-[#3F3E3E]/60 hover:bg-black/5 rounded-full"
+              onClick={handleMobileCollapse}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Widget (>= md) */}
+      <div
+        className={cn(
+          "hidden md:block w-[min(20rem,92vw)] overflow-hidden rounded-2xl border border-black/15 bg-white/95 text-left shadow-[0_12px_40px_rgba(0,0,0,0.18)]",
           className
         )}
         onMouseEnter={() => setIsHovering(true)}

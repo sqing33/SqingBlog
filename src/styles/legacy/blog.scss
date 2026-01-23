@@ -420,6 +420,7 @@
 @media screen and (max-width: 768px) {
   .blog:not(.blog-page) .blog-shell {
     padding-top: 0;
+    padding-bottom: calc(94px + env(safe-area-inset-bottom));
   }
 }
 
@@ -1711,21 +1712,9 @@
 
   &::before,
   &::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: -1;
-  }
-
-  &::before {
-    background: radial-gradient(circle at 15% 20%, rgba(47, 118, 210, 0.25), transparent 45%),
-      radial-gradient(circle at 85% 10%, rgba(243, 193, 75, 0.25), transparent 40%),
-      radial-gradient(circle at 85% 80%, rgba(232, 75, 60, 0.18), transparent 45%);
-  }
-
-  &::after {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0));
+    // No extra color overlays on blog detail page.
+    // Use `content: none` so the pseudo elements are not generated at all.
+    content: none;
   }
 
   .blog-shell {
@@ -1776,14 +1765,6 @@
     position: relative;
     overflow: hidden;
     max-height: 350px;
-
-    &::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: rgba(255, 255, 255, 1);
-      pointer-events: none;
-    }
   }
 
   .blog-hero__back {
@@ -1847,11 +1828,11 @@
   .blog-title {
     position: relative;
     margin: 10px 0 8px;
-    font-size: clamp(1.8rem, 2.5vw + 1rem, 2.8rem);
+    font-size: 1.8rem;
     line-height: 1.15;
   }
 
-  .blog-cover {
+.blog-cover {
     position: relative;
     width: 280px;
     height: 200px;
@@ -1882,6 +1863,10 @@
   .blog-body {
     margin-top: 28px;
     animation: fadeUp 0.8s ease 0.12s both;
+  }
+
+  .blog-mobile-widgets {
+    display: none;
   }
 
   .side-card__header {
@@ -2414,16 +2399,90 @@
   }
 
   @media (max-width: 1000px) {
+    .aside-col {
+      display: none;
+    }
+
+    .main-col {
+      position: static;
+      top: auto;
+    }
+
+    .blog-hero {
+      position: static;
+      top: auto;
+    }
+
+    .blog-mobile-widgets {
+      display: block;
+      margin-top: 16px;
+
+      > * + * {
+        margin-top: 16px;
+      }
+    }
+
     .blog-layout {
       padding: 0 12px;
     }
 
+    .blog-shell {
+      padding-bottom: calc(94px + env(safe-area-inset-bottom));
+    }
+
     .blog-hero__inner {
       padding: 24px;
+      max-height: none;
+      overflow: hidden;
+      border-radius: 18px;
+    }
+
+    .blog-hero__back {
+      display: none;
+    }
+
+    .blog-hero_title {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+
+    .blog-title {
+      margin: 6px 0 0;
+      font-size: clamp(1.45rem, 4.2vw + 0.7rem, 2.05rem);
+      line-height: 1.16;
+    }
+
+    .blog-cover {
+      width: 100%;
+      height: auto;
+      max-height: 240px;
+      object-fit: contain;
+      margin: 0;
     }
 
     .blog-actions-wrapper {
       padding: 20px 16px 16px;
+    }
+
+    .blog-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 12px;
+      row-gap: 6px;
+      align-items: center;
+      padding-top: 14px;
+    }
+
+    .blog-meta__dot {
+      display: none;
+    }
+
+    .blog-meta__item {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.9rem;
     }
 
     .blog-actions {
@@ -2467,6 +2526,239 @@
 
     .blog-article {
       padding: 24px;
+    }
+  }
+}
+
+.blog-toc-trigger {
+  display: none;
+}
+
+.blog-mobile-bottom-bar {
+  display: none;
+}
+
+@keyframes blog-toc-drawer-in {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes blog-toc-drawer-out {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+}
+
+@media (max-width: 1000px) {
+  .blog-mobile-bottom-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    padding: 6px calc(10px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(10px + env(safe-area-inset-left));
+    @include glass-bottom-bar(
+      $bg: rgba(255, 255, 255, 0.7),
+      $border: rgba(17, 24, 39, 0.08),
+      $blur: 14px
+    );
+  }
+
+  .blog-mobile-bottom-bar__item {
+    flex: 1;
+    min-width: 0;
+    height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+    color: rgba(17, 24, 39, 0.84);
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 0 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:active {
+      transform: translateY(1px);
+    }
+
+    &:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+  }
+
+  .blog-mobile-bottom-bar__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 17px;
+      height: 17px;
+    }
+  }
+
+  .blog-mobile-bottom-bar__avatar {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(47, 118, 210, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(47, 118, 210, 0.18);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    svg {
+      width: 16px;
+      height: 16px;
+      color: rgba(47, 118, 210, 0.8);
+    }
+  }
+
+  .blog-mobile-bottom-bar__text {
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    user-select: none;
+  }
+
+  .blog-toc-trigger {
+    position: fixed;
+    right: calc(12px + env(safe-area-inset-right));
+    top: 40%;
+    transform: translateY(-50%);
+    z-index: 60;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(17, 24, 39, 0.12);
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 12px 30px rgba(18, 38, 63, 0.18);
+    color: rgba(17, 24, 39, 0.85);
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+    &:active {
+      transform: translateY(-50%) scale(0.98);
+    }
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  .blog-toc-drawer {
+    position: fixed;
+    top: auto !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    width: 100%;
+    height: 300px;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+    animation: none !important;
+    transform: translate3d(0, 100%, 0) !important;
+    translate: none !important;
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    overflow: hidden;
+    transition: transform 220ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    // The TOC drawer is rendered in a portal (outside .blog-page).
+    // Re-declare legacy CSS variables so the TOC text/colors render correctly.
+    --ink: #1a2230;
+    --muted: #667085;
+    --accent: #2f76d2;
+    --accent-3: #f3c14b;
+  }
+
+  .blog-toc-drawer[data-state="open"] {
+    transform: translate3d(0, 0, 0) !important;
+  }
+
+  .blog-toc-drawer[data-state="closed"] {
+    transform: translate3d(0, 100%, 0) !important;
+  }
+
+  .blog-toc-drawer__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-right: 30px;
+  }
+
+  .blog-toc-drawer__title {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(17, 24, 39, 0.82);
+    margin: 0;
+  }
+
+  .blog-toc--drawer {
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    flex: 1;
+    min-height: 0;
+    position: relative;
+
+    &::before {
+      display: none;
+    }
+
+    .toc {
+      max-height: none;
+      flex: 1;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding-right: 4px;
     }
   }
 }

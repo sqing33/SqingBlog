@@ -143,10 +143,19 @@ function BubbleFrame(props: {
   );
 }
 
-export function HomeRightPanel() {
+export function HomeRightPanel({
+  variant = "responsive",
+}: {
+  variant?: "responsive" | "full";
+}) {
   return (
     <div className="flex w-full flex-col items-center justify-center gap-6">
-      <div className="flex items-center justify-center gap-4">
+      <div
+        className={cn(
+          "items-center justify-center gap-4",
+          variant === "responsive" ? "hidden md:flex" : "flex",
+        )}
+      >
         {FUN_ITEMS.map((item, index) => (
           <BubbleFrame
             key={item.name}
