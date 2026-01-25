@@ -33,6 +33,7 @@ type UserAccountProps = {
   ctaText?: string;
   showStats?: boolean;
   variant?: "panel" | "nav";
+  className?: string;
 };
 
 export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function UserAccount(
@@ -41,6 +42,7 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
     ctaText = "把灵感放进时光胶囊，分享给更多人。",
     showStats = true,
     variant = "panel",
+    className,
   },
   ref
 ) {
@@ -78,9 +80,10 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
   const userAvatar = me?.avatarUrl || "/assets/avatar.png";
   const userNickname = me?.nickname || "游客";
 
-  const goLogin = () => router.push("/login");
+const goLogin = () => router.push("/login");
   const goToUserInfo = () => router.push("/user");
   const goToMyBlogs = () => router.push("/user?section=blogs");
+  const goToPost = () => router.push("/blog/post");
   const goToFeedback = () => router.push("/user?section=feedback");
   const goToNotes = () => router.push("/notes");
   const goToTodo = () => router.push("/todo");
@@ -128,7 +131,7 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
     return (
       <div
         ref={ref as unknown as ForwardedRef<HTMLDivElement>}
-        className="user-account-nav"
+        className={cn("user-account-nav", className)}
         role="navigation"
         aria-label="账号导航栏"
       >
@@ -197,22 +200,21 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
   return (
     <section
       ref={ref as unknown as ForwardedRef<HTMLElement>}
-      className="panel panel--aside user-account-panel"
+      className={cn("panel panel--aside user-account-panel", className)}
     >
       <div className="side-card__header">
         <h4 className="side-card__title">账号</h4>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
+<button
             type="button"
             className={cn(
               "user-card w-full text-left",
               "appearance-none bg-transparent p-0",
               "cursor-pointer"
             )}
-            aria-label="打开账号菜单"
+            onClick={goToUserInfo}
+            aria-label="前往个人中心"
           >
             <div className="user-card__avatar">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -224,16 +226,7 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
                 {isLogined ? "欢迎回来，去看看最新帖子吧" : "登录后可发帖、收藏和评论"}
               </div>
             </div>
-            <div className="user-card__more" aria-hidden="true">
-              <ChevronDown />
-            </div>
           </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent align="end" sideOffset={10}>
-          {menuContent}
-        </DropdownMenuContent>
-      </DropdownMenu>
 
       <div className="user-card__quick">
         {!isLogined ? (
@@ -247,13 +240,13 @@ export const UserAccount = forwardRef<HTMLElement, UserAccountProps>(function Us
         ) : (
           showStats ? (
             <div className="user-card__stats" aria-label="快捷入口">
-              <button
+<button
                 type="button"
                 className="user-card__stat"
-                onClick={goToUserInfo}
-                aria-label="查看个人页面"
+                onClick={goToPost}
+                aria-label="发新帖子"
               >
-                <div className="user-card__stat-label">帖子</div>
+                <div className="user-card__stat-label">发帖</div>
                 <div className="user-card__stat-value">
                   {countsLoading ? "…" : String(counts?.posts ?? 0)}
                 </div>

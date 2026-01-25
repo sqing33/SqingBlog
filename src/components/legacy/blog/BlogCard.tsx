@@ -1,3 +1,4 @@
+import { Pin } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type BlogCardPost = {
@@ -70,6 +71,11 @@ export function BlogCard({
               <div className="card-image card-image--placeholder" aria-hidden="true" />
             )}
             <div className="card-tags">
+              {isPinned && (
+                <div className="pinned-icon-wrapper">
+                  <Pin className="pinned-icon" />
+                </div>
+              )}
               {categories.length > 0 ? (
                 categories.map((cat) => (
                   <span key={cat} className={cn("card-tag", tagClassForCategory(cat))}>{cat}</span>

@@ -718,7 +718,7 @@ export function HomeMusicPlayer({
             </TabsContent>
 
             <TabsContent value="lyrics" className="mt-3">
-              <div className="max-h-[320px] overflow-auto rounded-md border p-4 text-sm leading-6 whitespace-pre-wrap">
+              <div className="max-h-[320px] min-w-0 overflow-auto rounded-md border p-4 text-sm leading-6 whitespace-pre-wrap break-all">
                 {lyrics ? lyrics : "当前歌曲未内嵌歌词"}
               </div>
             </TabsContent>

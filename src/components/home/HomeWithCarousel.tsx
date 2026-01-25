@@ -62,6 +62,45 @@ export function HomeWithCarousel() {
   const [duanzi, setDuanzi] = useState<string | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
 
+  const scrollToBlog = () => {
+    if (panel !== "hero" || lockRef.current) return;
+    lockRef.current = true;
+    wheelAccumRef.current = 0;
+    const vh = viewportRef.current || window.innerHeight;
+    targetYRef.current = vh;
+    
+    const animate = () => {
+      const panelsEl = panelsRef.current;
+      if (!panelsEl) return;
+      
+      const target = targetYRef.current;
+      const current = currentYRef.current;
+      const next = current + (target - current) * 0.18;
+      
+      currentYRef.current = next;
+      panelsEl.style.transform = `translate3d(0, ${-next}px, 0)`;
+      setShowScrollHint(panel === "hero" && next < 48);
+      
+      const remaining = Math.abs(target - next);
+      if (remaining > 0.5) {
+        rafRef.current = window.requestAnimationFrame(animate);
+        return;
+      }
+      
+      currentYRef.current = target;
+      panelsEl.style.transform = `translate3d(0, ${-target}px, 0)`;
+      setShowScrollHint(false);
+      
+      const blogEl = blogScrollRef.current;
+      if (blogEl) blogEl.scrollTop = 0;
+      setPanel("blog");
+      lockRef.current = false;
+    };
+    
+    if (rafRef.current != null) window.cancelAnimationFrame(rafRef.current);
+    rafRef.current = window.requestAnimationFrame(animate);
+  };
+
   useEffect(() => {
     const targetPanel = searchParams.get("panel");
     if (targetPanel !== "blog") return;
@@ -360,7 +399,12 @@ export function HomeWithCarousel() {
       </div>
 
 {showScrollHint ? (
-        <div className="pointer-events-none fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2">
+        <button
+          type="button"
+          className="pointer-events-auto fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-2 appearance-none border-none bg-transparent p-0 cursor-pointer"
+          onClick={scrollToBlog}
+          aria-label="向下滚动查看博客"
+        >
           {duanzi ? (
             <div className="w-[calc(100vw-20px)] px-[10px] text-center font-medium text-[#3F3E3E] text-sm drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)] md:max-w-[min(32rem,90vw)] md:px-4">
               {duanzi}
@@ -369,7 +413,7 @@ export function HomeWithCarousel() {
           <div className="home-scroll-hint-bob flex items-center justify-center">
             <ChevronDown className="h-9 w-9 text-[#3F3E3E]/75 drop-shadow-[0_2px_10px_rgba(0,0,0,0.18)]" />
           </div>
-        </div>
+        </button>
       ) : null}
     </div>
   );

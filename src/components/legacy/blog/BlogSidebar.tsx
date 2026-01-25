@@ -15,7 +15,9 @@ export function BlogSidebar({
 }) {
   return (
     <div className="blog-sidebar">
-      {showAccount ? <UserAccount showCta={showCta} ctaText={ctaText} /> : null}
+      {showAccount ? (
+        <UserAccount showCta={showCta} ctaText={ctaText} className="glass-card" />
+      ) : null}
       {children}
     </div>
   );

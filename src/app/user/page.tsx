@@ -246,6 +246,9 @@ export default async function UserCenterPage({
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link href="/user?section=feedback">反馈</Link>
+            </Button>
             <Button asChild>
               <Link href="/blog/post">写新帖子</Link>
             </Button>
