@@ -247,6 +247,7 @@ export function StickyNotesBoard({
   const [submitting, setSubmitting] = useState(false);
   const [savingLayout, setSavingLayout] = useState(false);
   const [lockingNoteIds, setLockingNoteIds] = useState<Record<string, boolean>>({});
+  const [deletingNoteIds, setDeletingNoteIds] = useState<Record<string, boolean>>({});
   const [lastAutoSaveErrorAt, setLastAutoSaveErrorAt] = useState(0);
 
   const [editOpen, setEditOpen] = useState(false);
@@ -255,6 +256,9 @@ export function StickyNotesBoard({
   const [editSelectedTags, setEditSelectedTags] = useState<string[]>([]);
   const [editContent, setEditContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingNote, setDeletingNote] = useState<StickyNote | null>(null);
 
   const canSubmit = useMemo(() => {
     const tagsToSubmit = mergeTagsWithDraft(selectedTags, tagDraft);
@@ -510,6 +514,39 @@ export function StickyNotesBoard({
       setError("锁定失败");
     } finally {
       setLockingNoteIds((prev) => {
+        const next = { ...prev };
+        delete next[noteId];
+        return next;
+      });
+    }
+  };
+
+  const deleteNote = async (note: StickyNote) => {
+    const noteId = note.id;
+    if (!noteId) return;
+    if (deletingNoteIds[noteId]) return;
+
+    setDeletingNoteIds((prev) => ({ ...prev, [noteId]: true }));
+    setError(null);
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+      if (res.status === 401) {
+        setUnauthorized(true);
+        return;
+      }
+
+      const json = (await res.json().catch(() => null)) as { ok?: boolean; message?: string } | null;
+      if (!json?.ok) {
+        setError(json?.message || "删除失败");
+        setNotes((prev) => [...prev, note]);
+      }
+    } catch {
+      setError("删除失败");
+      setNotes((prev) => [...prev, note]);
+    } finally {
+      setDeletingNoteIds((prev) => {
         const next = { ...prev };
         delete next[noteId];
         return next;
@@ -788,6 +825,7 @@ export function StickyNotesBoard({
   const renderNoteCard = (note: StickyNote, options?: { insetPx?: number; className?: string }) => {
     const noteTags = (note.tags || []).filter(Boolean);
     const isLocking = Boolean(lockingNoteIds[note.id]);
+    const isDeleting = Boolean(deletingNoteIds[note.id]);
     const displayTags = (() => {
       const parts: string[] = [];
       for (const tag of noteTags) {
@@ -856,6 +894,22 @@ export function StickyNotesBoard({
                     ) : (
                       <Unlock className="h-3.5 w-3.5" />
                     )}
+                  </button>
+                ) : null}
+                {layoutEditing ? (
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    disabled={isDeleting}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onClick={() => {
+                      setDeletingNote(note);
+                      setDeleteConfirmOpen(true);
+                    }}
+                    className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border bg-white/70 text-rose-500 shadow-sm hover:bg-white hover:text-rose-600 disabled:pointer-events-none disabled:opacity-50"
+                    aria-label="删除便签"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
                   </button>
                 ) : null}
                 <button
@@ -1391,12 +1445,6 @@ export function StickyNotesBoard({
             </div>
           ) : null}
 
-          {layoutEditing ? (
-            <div className="mt-4 flex items-center justify-end text-xs text-muted-foreground">
-              {savingLayout ? "布局保存中…" : "提示：拖拽便签顶部移动，右下角拖动可调整大小"}
-            </div>
-          ) : null}
-
           <div className="mt-4 hidden items-center gap-2 lg:hidden">
             <Button
               type="button"
@@ -1905,6 +1953,71 @@ export function StickyNotesBoard({
                 disabled={todoSubmitting || !todoDraft.trim()}
               >
                 {todoSubmitting ? "创建中…" : "创建代办"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>确认删除便签</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              确定要删除这条便签吗？此操作无法撤销。
+            </div>
+
+            {deletingNote ? (
+              <div className="rounded-lg border bg-muted/50 p-3">
+                <div className="flex min-h-0 items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="min-w-0 flex-1 truncate">
+                    {formatMySqlDateTime(deletingNote.create_time)}
+                  </span>
+                  <div className="flex min-w-0 items-center justify-end gap-1 overflow-hidden">
+                    {((deletingNote.tags || []).filter(Boolean).slice(0, 3)).map((tag) => (
+                      <Badge
+                        key={`${deletingNote.id}-${tag}`}
+                        variant="secondary"
+                        className="max-w-[80px] truncate rounded-full text-xs"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="mt-2 text-sm text-foreground/90 line-clamp-3">
+                  {deletingNote.content}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  setDeleteConfirmOpen(false);
+                  setDeletingNote(null);
+                }}
+                disabled={deletingNote ? Boolean(deletingNoteIds[deletingNote.id]) : false}
+              >
+                取消
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  if (!deletingNote) return;
+                  void deleteNote(deletingNote);
+                  setDeleteConfirmOpen(false);
+                  setDeletingNote(null);
+                }}
+                disabled={deletingNote ? Boolean(deletingNoteIds[deletingNote.id]) : false}
+              >
+                {deletingNote && deletingNoteIds[deletingNote.id] ? "删除中…" : "确认删除"}
               </Button>
             </div>
           </div>

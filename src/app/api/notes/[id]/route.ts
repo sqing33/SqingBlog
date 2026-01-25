@@ -54,6 +54,54 @@ const updateSchema = z
     { message: "没有需要更新的字段" }
   );
 
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  let session;
+  try {
+    session = requireSession(req, "user");
+  } catch {
+    return fail("请先登录", { status: 401, code: "UNAUTHORIZED" });
+  }
+
+  const { id } = await params;
+  if (!id) return fail("缺少 id", { status: 400, code: "INVALID_INPUT" });
+
+  const conn = await mysqlGetConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [owned] = await conn.query<OwnedRow[]>(
+      "SELECT id FROM sticky_note WHERE id = ? AND user_id = ? LIMIT 1 FOR UPDATE",
+      [id, session.sub]
+    );
+    if (!owned.length) {
+      await conn.rollback();
+      return fail("便签不存在", { status: 404, code: "NOT_FOUND" });
+    }
+
+    await conn.execute(
+      "DELETE FROM sticky_note_tag WHERE note_id = ? AND user_id = ?",
+      [id, session.sub]
+    );
+    await conn.execute(
+      "DELETE FROM sticky_note WHERE id = ? AND user_id = ?",
+      [id, session.sub]
+    );
+
+    await conn.commit();
+    return ok(null, { message: "删除成功" });
+  } catch (error) {
+    try {
+      await conn.rollback();
+    } catch {}
+    return fail("删除失败", { status: 500, code: "DB_ERROR" });
+  } finally {
+    conn.release();
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
