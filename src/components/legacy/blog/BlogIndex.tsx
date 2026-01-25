@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Filter, Search, Sparkles, UserRound } from "lucide-react";
+import { Disc3, Filter, Search, Sparkles, UserRound } from "lucide-react";
 
 import { BlogSidebar } from "@/components/legacy/blog/BlogSidebar";
 import { BlogCard, type BlogCardPost } from "@/components/legacy/blog/BlogCard";
@@ -10,6 +10,7 @@ import { BlogCategoryFilter } from "@/components/legacy/blog/BlogCategoryFilter"
 import { BlogAnimeQuickLinks } from "@/components/legacy/blog/BlogAnimeQuickLinks";
 import { getAccountSummary } from "@/lib/account-summary-client";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { HomeMusicPlayer } from "@/components/home/HomeMusicPlayer";
 
 type ApiResponse<T> = { ok?: boolean; data?: T; message?: string };
 
@@ -42,6 +43,12 @@ type UserMe = {
 };
 
 type MobilePanel = "anime" | "filter" | "search";
+
+type MusicController = {
+  open: boolean;
+  setOpen: (open: boolean) => void;
+  coverDataUrl: string | null;
+};
 
 function stripHtml(html: string) {
   return (html || "")
@@ -94,11 +101,21 @@ function getPagerPages(totalPages: number, currentPage: number, maxPages = 7) {
   return pages;
 }
 
-export function BlogIndex() {
+export function BlogIndex({
+  music,
+}: {
+  music?: MusicController;
+} = {}) {
   const router = useRouter();
   const [isMobile, setIsMobile] = useState(false);
   const [me, setMe] = useState<UserMe | null>(null);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel | null>(null);
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [musicCoverDataUrl, setMusicCoverDataUrl] = useState<string | null>(null);
+
+  const effectiveMusicOpen = music?.open ?? musicOpen;
+  const setEffectiveMusicOpen = music?.setOpen ?? setMusicOpen;
+  const effectiveMusicCoverDataUrl = music?.coverDataUrl ?? musicCoverDataUrl;
 
   const [categories, setCategories] = useState<CategoryOption[]>([
     { label: "全部", value: "0" },
@@ -232,6 +249,7 @@ export function BlogIndex() {
   const goToPost = (id: string) => router.push(`/blog/${id}`);
 
   const toggleMobilePanel = (panel: MobilePanel) => {
+    setEffectiveMusicOpen(false);
     setMobilePanel((current) => (current === panel ? null : panel));
   };
 
@@ -288,6 +306,29 @@ export function BlogIndex() {
                 <Search />
               </span>
               <span className="blog-mobile-bottom-bar__text">搜索</span>
+            </button>
+
+            <button
+              type="button"
+              className="blog-mobile-bottom-bar__item"
+              aria-label={effectiveMusicOpen ? "关闭音乐" : "打开音乐"}
+              aria-pressed={effectiveMusicOpen}
+              onClick={() => {
+                setMobilePanel(null);
+                setEffectiveMusicOpen(!effectiveMusicOpen);
+              }}
+            >
+              {effectiveMusicCoverDataUrl ? (
+                <span className="blog-mobile-bottom-bar__avatar" aria-hidden="true">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={effectiveMusicCoverDataUrl} alt="" />
+                </span>
+              ) : (
+                <span className="blog-mobile-bottom-bar__icon" aria-hidden="true">
+                  <Disc3 />
+                </span>
+              )}
+              <span className="blog-mobile-bottom-bar__text">音乐</span>
             </button>
 
             <button
@@ -375,6 +416,16 @@ export function BlogIndex() {
               </div>
             </DialogContent>
           </Dialog>
+
+          {!music ? (
+            <HomeMusicPlayer
+              className="hidden"
+              open={musicOpen}
+              onOpenChange={setMusicOpen}
+              showMobileWidget={false}
+              onCoverDataUrlChange={setMusicCoverDataUrl}
+            />
+          ) : null}
         </>
       ) : null}
 

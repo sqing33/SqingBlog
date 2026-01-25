@@ -26,16 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -71,20 +61,23 @@ function formatTime(seconds: number) {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-function clamp01(value: number) {
-  return Math.min(1, Math.max(0, value));
-}
-
-function getRandomIndex(max: number, exclude: number) {
-  if (max <= 1) return exclude;
-  let next = exclude;
-  while (next === exclude) {
-    next = Math.floor(Math.random() * max);
-  }
-  return next;
-}
-
-export function HomeMusicPlayer({ className }: { className?: string }) {
+export function HomeMusicPlayer({
+  className,
+  open: controlledOpen,
+  onOpenChange,
+  showMobileWidget = true,
+  autoExpandMobileWidget = false,
+  onCoverDataUrlChange,
+  onPlayingChange,
+}: {
+  className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  showMobileWidget?: boolean;
+  autoExpandMobileWidget?: boolean;
+  onCoverDataUrlChange?: (coverDataUrl: string | null) => void;
+  onPlayingChange?: (isPlaying: boolean) => void;
+}) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const autoPlayAfterChangeRef = useRef(false);
   const metaAbortRef = useRef<AbortController | null>(null);
@@ -93,21 +86,39 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
   );
   const isPlayingRef = useRef(false);
 
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    if (typeof controlledOpen === "boolean") {
+      onOpenChange?.(next);
+      return;
+    }
+    setUncontrolledOpen(next);
+  };
   const [tracks, setTracks] = useState<Track[] | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(0.8);
-  const [loop, setLoop] = useState(false);
-  const [shuffle, setShuffle] = useState(false);
-  const [playbackRate, setPlaybackRate] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [coverDataUrl, setCoverDataUrl] = useState<string | null>(null);
   const [lyrics, setLyrics] = useState<string | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  useEffect(() => {
+    onCoverDataUrlChange?.(coverDataUrl);
+  }, [coverDataUrl, onCoverDataUrlChange]);
+
+  useEffect(() => {
+    onPlayingChange?.(isPlaying);
+  }, [isPlaying, onPlayingChange]);
+
+  useEffect(() => {
+    if (!showMobileWidget) return;
+    if (!autoExpandMobileWidget) return;
+    setMobileExpanded(true);
+  }, [autoExpandMobileWidget, showMobileWidget]);
 
   const trackList = tracks ?? [];
   const activeTrack = trackList[activeIndex];
@@ -165,24 +176,6 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
       if (err instanceof DOMException && err.name === "AbortError") return;
     }
   }, []);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.volume = clamp01(volume);
-  }, [volume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.loop = loop;
-  }, [loop]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    audio.playbackRate = playbackRate;
-  }, [playbackRate]);
 
   const loadTracks = useCallback(async (opts?: {
     autoplay?: boolean;
@@ -286,22 +279,12 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
     if (!hasTracks) return;
     const audio = audioRef.current;
     const autoplay = audio ? !audio.paused : isPlaying;
-
-    if (shuffle) {
-      const next = getRandomIndex(trackList.length, activeIndex);
-      requestTrackChange(next, autoplay);
-      return;
-    }
-
     requestTrackChange(activeIndex + 1, autoplay);
   };
 
   const handleEnded = () => {
     if (!hasTracks) return;
-    if (loop) return;
-    const next = shuffle
-      ? getRandomIndex(trackList.length, activeIndex)
-      : (activeIndex + 1) % trackList.length;
+    const next = (activeIndex + 1) % trackList.length;
     requestTrackChange(next, true);
   };
 
@@ -329,114 +312,116 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
   return (
     <>
       {/* Mobile Mobile Compact/Expanded Widget */}
-      <div
-        className={cn(
-          "md:hidden fixed z-50 transition-all duration-300 ease-spring",
-          mobileExpanded
-            ? "inset-x-4 top-4 w-auto rounded-2xl border border-black/15 bg-white/95 shadow-xl p-3"
-            : "right-4 top-4 size-12 rounded-xl border border-black/15 bg-white/90 shadow-lg overflow-hidden"
-        )}
-      >
-        {!mobileExpanded ? (
-          <button
-            type="button"
-            aria-label="展开音乐播放器"
-            className="size-full flex items-center justify-center relative"
-            onClick={handleMobileExpand}
-          >
-            <div
-              className={cn(
-                "relative size-9 rounded-full overflow-hidden shadow-sm ring-1 ring-black/5 transition-transform duration-[3s] linear",
-                isPlaying ? "animate-spin" : ""
-              )}
-              style={{ animationDuration: "10s" }}
-            >
-               {coverDataUrl ? (
-                <Image
-                  src={coverDataUrl}
-                  alt="cover"
-                  fill
-                  sizes="36px"
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <Disc3 className="size-full p-1.5 text-[#3F3E3E]/40 bg-black/5" />
-              )}
-            </div>
-          </button>
-        ) : (
-          <div className="flex items-center gap-3">
-            <div
-              className="relative size-12 shrink-0 rounded-full overflow-hidden border border-black/10"
-              onClick={async (e) => {
-                e.stopPropagation();
-                await handleTogglePlay();
-              }}
-            >
-               {coverDataUrl ? (
-                <Image
-                  src={coverDataUrl}
-                  alt="cover"
-                  fill
-                  sizes="48px"
-                  className={cn(
-                    "object-cover transition-opacity",
-                    isPlaying ? "opacity-100" : "opacity-80"
-                  )}
-                  unoptimized
-                />
-              ) : (
-                <Disc3 className="h-full w-full p-2 text-[#3F3E3E]/40 bg-gray-100" />
-              )}
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                {isPlaying ? (
-                  <Pause className="size-5 text-white drop-shadow-md" />
-                ) : (
-                  <Play className="size-5 text-white drop-shadow-md ml-0.5" />
-                )}
-              </div>
-            </div>
-
+      {showMobileWidget ? (
+        <div
+          className={cn(
+            "md:hidden fixed z-50 transition-all duration-300 ease-spring",
+            mobileExpanded
+              ? "inset-x-4 top-4 w-auto rounded-2xl border border-black/15 bg-white/95 shadow-xl p-3"
+              : "right-4 top-4 size-12 rounded-xl border border-black/15 bg-white/90 shadow-lg overflow-hidden"
+          )}
+        >
+          {!mobileExpanded ? (
             <button
               type="button"
-              aria-label="打开音乐播放器详情"
-              className="flex-1 min-w-0 flex flex-col justify-center text-left"
-              onClick={async (e) => {
-                e.stopPropagation();
-                setOpen(true);
-                if (!hasLoaded) {
-                  await loadTracks({
-                    autoplay: false,
-                    prevFile: activeTrack?.file ?? null,
-                    wasPlaying: isPlaying,
-                  });
-                }
-              }}
+              aria-label="展开音乐播放器"
+              className="size-full flex items-center justify-center relative"
+              onClick={handleMobileExpand}
             >
-              <div className="truncate font-medium text-[#3F3E3E] text-sm">
-                 {hasTracks
-                  ? (activeTrack?.title ?? "正在播放")
-                  : hasLoaded
-                  ? "无音乐"
-                  : "点击播放"}
-              </div>
-              <div className="text-xs text-[#3F3E3E]/60">
-                 {formatTime(currentTime)} / {duration ? formatTime(duration) : "--:--"}
+              <div
+                className={cn(
+                  "relative size-9 rounded-full overflow-hidden shadow-sm ring-1 ring-black/5 transition-transform duration-[3s] linear",
+                  isPlaying ? "animate-spin" : ""
+                )}
+                style={{ animationDuration: "10s" }}
+              >
+                {coverDataUrl ? (
+                  <Image
+                    src={coverDataUrl}
+                    alt="cover"
+                    fill
+                    sizes="36px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                ) : (
+                  <Disc3 className="size-full p-1.5 text-[#3F3E3E]/40 bg-black/5" />
+                )}
               </div>
             </button>
+          ) : (
+            <div className="flex items-center gap-3">
+              <div
+                className="relative size-12 shrink-0 rounded-full overflow-hidden border border-black/10"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await handleTogglePlay();
+                }}
+              >
+                {coverDataUrl ? (
+                  <Image
+                    src={coverDataUrl}
+                    alt="cover"
+                    fill
+                    sizes="48px"
+                    className={cn(
+                      "object-cover transition-opacity",
+                      isPlaying ? "opacity-100" : "opacity-80"
+                    )}
+                    unoptimized
+                  />
+                ) : (
+                  <Disc3 className="h-full w-full p-2 text-[#3F3E3E]/40 bg-gray-100" />
+                )}
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  {isPlaying ? (
+                    <Pause className="size-5 text-white drop-shadow-md" />
+                  ) : (
+                    <Play className="size-5 text-white drop-shadow-md ml-0.5" />
+                  )}
+                </div>
+              </div>
 
-            <Button
-              variant="ghost"
-              size="icon"
-              className="shrink-0 size-8 text-[#3F3E3E]/60 hover:bg-black/5 rounded-full"
-              onClick={handleMobileCollapse}
-            >
-              <X className="size-4" />
-            </Button>
-          </div>
-        )}
-      </div>
+              <button
+                type="button"
+                aria-label="打开音乐播放器详情"
+                className="flex-1 min-w-0 flex flex-col justify-center text-left"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  setOpen(true);
+                  if (!hasLoaded) {
+                    await loadTracks({
+                      autoplay: false,
+                      prevFile: activeTrack?.file ?? null,
+                      wasPlaying: isPlaying,
+                    });
+                  }
+                }}
+              >
+                <div className="truncate font-medium text-[#3F3E3E] text-sm">
+                  {hasTracks
+                    ? (activeTrack?.title ?? "正在播放")
+                    : hasLoaded
+                      ? "无音乐"
+                      : "点击播放"}
+                </div>
+                <div className="text-xs text-[#3F3E3E]/60">
+                  {formatTime(currentTime)} / {duration ? formatTime(duration) : "--:--"}
+                </div>
+              </button>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="shrink-0 size-8 text-[#3F3E3E]/60 hover:bg-black/5 rounded-full"
+                onClick={handleMobileCollapse}
+              >
+                <X className="size-4" />
+              </Button>
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Desktop Widget (>= md) */}
       <div
@@ -636,7 +621,6 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
               <TabsList>
                 <TabsTrigger value="list">列表</TabsTrigger>
                 <TabsTrigger value="lyrics">歌词</TabsTrigger>
-                <TabsTrigger value="settings">设置</TabsTrigger>
               </TabsList>
 
               <div className="flex items-center gap-2">
@@ -649,6 +633,18 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
                   onClick={handlePrev}
                 >
                   <SkipBack />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon-sm"
+                  aria-label={isPlaying ? "暂停" : "播放"}
+                  disabled={hasLoaded && !hasTracks}
+                  onClick={async () => {
+                    await handleTogglePlay();
+                  }}
+                >
+                  {isPlaying ? <Pause /> : <Play />}
                 </Button>
                 <Button
                   type="button"
@@ -724,87 +720,6 @@ export function HomeMusicPlayer({ className }: { className?: string }) {
             <TabsContent value="lyrics" className="mt-3">
               <div className="max-h-[320px] overflow-auto rounded-md border p-4 text-sm leading-6 whitespace-pre-wrap">
                 {lyrics ? lyrics : "当前歌曲未内嵌歌词"}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="settings" className="mt-3">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="flex items-center justify-between gap-3 rounded-md border px-4 py-3">
-                    <Label className="text-sm">单曲循环</Label>
-                    <Switch checked={loop} onCheckedChange={setLoop} />
-                  </div>
-
-                  <div className="flex items-center justify-between gap-3 rounded-md border px-4 py-3">
-                    <Label className="text-sm">随机播放</Label>
-                    <Switch checked={shuffle} onCheckedChange={setShuffle} />
-                  </div>
-                </div>
-
-                <div className="rounded-md border px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm">音量</Label>
-                    <span className="text-muted-foreground text-xs">
-                      {Math.round(clamp01(volume) * 100)}%
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0}
-                    max={1}
-                    step={0.01}
-                    value={volume}
-                    onChange={(e) => setVolume(Number(e.target.value))}
-                    className="mt-3 w-full accent-black"
-                  />
-                </div>
-
-                <div className="rounded-md border px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm">播放速度</Label>
-                    <Select
-                      value={String(playbackRate)}
-                      onValueChange={(v) => setPlaybackRate(Number(v))}
-                    >
-                      <SelectTrigger size="sm" className="w-[140px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0.75">0.75×</SelectItem>
-                        <SelectItem value="1">1×</SelectItem>
-                        <SelectItem value="1.25">1.25×</SelectItem>
-                        <SelectItem value="1.5">1.5×</SelectItem>
-                        <SelectItem value="2">2×</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const audio = audioRef.current;
-                      if (!audio) return;
-                      audio.currentTime = 0;
-                      setCurrentTime(0);
-                    }}
-                  >
-                    从头播放
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={async () => {
-                      await handleTogglePlay();
-                    }}
-                    disabled={hasLoaded && !hasTracks}
-                  >
-                    {isPlaying ? "暂停" : "播放"}
-                  </Button>
-                </div>
               </div>
             </TabsContent>
           </Tabs>

@@ -57,6 +57,8 @@ export function HomeWithCarousel() {
   const currentYRef = useRef(0);
   const targetYRef = useRef(0);
   const [panel, setPanel] = useState<"hero" | "blog">("hero");
+  const [musicOpen, setMusicOpen] = useState(false);
+  const [musicCoverDataUrl, setMusicCoverDataUrl] = useState<string | null>(null);
   const [duanzi, setDuanzi] = useState<string | null>(null);
   const [showScrollHint, setShowScrollHint] = useState(true);
 
@@ -269,7 +271,13 @@ export function HomeWithCarousel() {
     <div className="relative h-[100svh] w-full overflow-hidden">
       <div className="fixed right-6 top-6 z-50 pointer-events-none md:pointer-events-auto">
         <div className="pointer-events-auto">
-          <HomeMusicPlayer />
+          <HomeMusicPlayer
+            open={musicOpen}
+            onOpenChange={setMusicOpen}
+            showMobileWidget={panel === "hero"}
+            autoExpandMobileWidget={panel === "hero"}
+            onCoverDataUrlChange={setMusicCoverDataUrl}
+          />
         </div>
       </div>
       <div className="relative h-[100svh] w-full overflow-hidden">
@@ -339,7 +347,13 @@ export function HomeWithCarousel() {
               ref={blogScrollRef}
               className="h-[100svh] w-full overflow-y-auto overflow-x-hidden overscroll-contain"
             >
-              <BlogIndex />
+              <BlogIndex
+                music={{
+                  open: musicOpen,
+                  setOpen: setMusicOpen,
+                  coverDataUrl: musicCoverDataUrl,
+                }}
+              />
             </div>
           </section>
         </div>
