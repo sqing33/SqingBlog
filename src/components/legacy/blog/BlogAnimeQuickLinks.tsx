@@ -20,6 +20,8 @@ const animeLinks = [
 ] as const;
 
 export function BlogAnimeQuickLinks() {
+  const links = animeLinks.slice(0, 1);
+  const isSingle = links.length === 1;
   return (
     <section
       className="panel panel--aside glass-card"
@@ -29,14 +31,24 @@ export function BlogAnimeQuickLinks() {
         <h4 className="side-card__title">动漫专题</h4>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        {animeLinks.map((item) => (
+      <div
+        className={
+          isSingle
+            ? "grid grid-cols-1 place-items-center gap-3"
+            : "grid grid-cols-3 gap-3"
+        }
+      >
+        {links.map((item) => (
           <Link
             key={item.href}
             href={item.href}
             aria-label={`前往动漫：${item.alt}`}
             title={item.alt}
-            className="group overflow-hidden rounded-2xl border border-black/10 bg-white/50 p-2 transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+            className={
+              isSingle
+                ? "group w-24 overflow-hidden rounded-2xl border border-black/10 bg-white/50 p-2 transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+                : "group overflow-hidden rounded-2xl border border-black/10 bg-white/50 p-2 transition hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/20"
+            }
           >
             <div className="relative aspect-square w-full">
               <Image
@@ -53,4 +65,3 @@ export function BlogAnimeQuickLinks() {
     </section>
   );
 }
-

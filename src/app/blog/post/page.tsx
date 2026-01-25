@@ -7,7 +7,7 @@ export default async function PostBlogPage() {
   const session = await getUserSession();
   if (!session) redirect("/login");
   return (
-    <div className="mx-auto w-full max-w-[1200px] px-4 py-6 sm:px-6 sm:py-10">
+    <div className="mx-auto w-full max-w-[1200px] px-0 py-0 md:px-6 md:py-10">
       <PostBlogForm />
     </div>
   );

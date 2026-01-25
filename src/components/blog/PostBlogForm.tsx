@@ -307,17 +307,17 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
     }
   };
 
-  return (
-    <Card className="fixed inset-0 z-50 m-0 h-screen w-screen rounded-none border-0">
-      <CardContent className="flex h-screen flex-col px-6 pb-6">
+return (
+<Card className="relative z-50 m-0 h-auto min-h-screen w-full rounded-none border-0 md:fixed md:inset-0 md:h-screen md:w-screen">
+      <CardContent className="flex min-h-screen flex-col px-4 pb-4 md:h-screen md:px-6 md:pb-6">
         {error ? (
           <div className="flex-none rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm mb-4">
             {error}
           </div>
         ) : null}
 
-        <div className="flex-none grid grid-cols-[140px_1fr_360px_400px_160px_auto] items-start gap-4 mb-4">
-          <div className="pt-7">
+        <div className="flex-none mb-4 flex flex-col gap-4 md:grid md:grid-cols-[140px_1fr_360px_400px_160px_auto] md:items-start">
+          <div className="md:pt-7">
             <h1 className="text-xl font-semibold">
               {isEditMode ? "编辑帖子" : "发表帖子"}
             </h1>
@@ -384,8 +384,8 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
                   链接
                 </TabsTrigger>
               </TabsList>
-              <TabsContent value="upload" className="mt-2">
-                <div className="flex gap-2">
+<TabsContent value="upload" className="mt-2">
+                <div className="flex flex-row gap-2 items-center">
                   <div className="flex-1">
                     <Input
                       type="file"
@@ -397,20 +397,20 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
                       }}
                     />
                   </div>
-                  <Button
-                    variant="secondary"
-                    onClick={() => setCoverUrl(null)}
-                    type="button"
-                    size="sm"
-                    disabled={!coverPreviewUrl && !uploading}
-                    className="w-14"
-                  >
-                    移除
-                  </Button>
-                </div>
-              </TabsContent>
-              <TabsContent value="url" className="mt-2">
-                <div className="flex gap-2">
+                    <Button
+                      variant="secondary"
+                      onClick={() => setCoverUrl(null)}
+                      type="button"
+                      size="sm"
+                      disabled={!coverPreviewUrl && !uploading}
+                      className="w-14"
+                    >
+                      移除
+                    </Button>
+                  </div>
+                </TabsContent>
+<TabsContent value="url" className="mt-2">
+                <div className="flex flex-row gap-2 items-center">
                   <div className="flex-1 relative">
                     <Input
                       value={coverUrlInput}
@@ -421,27 +421,27 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
                       disabled={uploadingFromUrl}
                     />
                   </div>
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setCoverUrl(null);
-                      setCoverUrlInput("");
-                    }}
-                    type="button"
-                    size="sm"
-                    disabled={!coverUrlInput && !uploadingFromUrl}
-                    className="w-14"
-                  >
-                    {uploadingFromUrl ? "转存中" : "移除"}
-                  </Button>
-                </div>
-              </TabsContent>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setCoverUrl(null);
+                        setCoverUrlInput("");
+                      }}
+                      type="button"
+                      size="sm"
+                      disabled={!coverUrlInput && !uploadingFromUrl}
+                      className="w-14"
+                    >
+                      {uploadingFromUrl ? "转存中" : "移除"}
+                    </Button>
+                  </div>
+                </TabsContent>
             </Tabs>
           </div>
 
           <div className="space-y-2">
             <Label>预览</Label>
-            <div className="flex items-center justify-center h-[90px] w-[160px] rounded-md border border-dashed bg-muted">
+            <div className="flex items-center justify-center h-[140px] w-full rounded-md border border-dashed bg-muted md:h-[90px] md:w-[160px]">
               {coverUrlInput ? (
                 <div className="h-full w-full p-2">
                   <img
@@ -472,8 +472,8 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
             </div>
           </div>
 
-          <div className="space-y-2 pt-7">
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="space-y-2 md:pt-7">
+            <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center md:gap-2">
               <Button disabled={!canSubmit} onClick={onSubmit} type="button">
                 {submitting
                   ? isEditMode
@@ -525,10 +525,10 @@ export function PostBlogForm({ initialData }: PostBlogFormProps = {}) {
             <MarkdownEditor
               value={content}
               onChange={setContent}
-              height={400}
+              height={isMobile ? 500 : 400}
               preview={isMobile ? "edit" : "live"}
               placeholder="把灵感放进时光胶囊，分享给更多人。"
-              autoHeight
+              autoHeight={!isMobile}
               uploadImage={uploadInlineImage}
             />
           </div>

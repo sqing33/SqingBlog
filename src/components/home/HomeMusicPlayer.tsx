@@ -7,7 +7,6 @@ import {
   RefreshCcw,
   SkipBack,
   SkipForward,
-  X,
 } from "lucide-react";
 import Image from "next/image";
 import {
@@ -317,7 +316,7 @@ export function HomeMusicPlayer({
           className={cn(
             "md:hidden fixed z-50 transition-all duration-300 ease-spring",
             mobileExpanded
-              ? "inset-x-4 top-4 w-auto rounded-2xl border border-black/15 bg-white/95 shadow-xl p-3"
+              ? "inset-x-4 top-4 w-auto rounded-2xl border border-black/15 bg-white/95 shadow-xl p-2"
               : "right-4 top-4 size-12 rounded-xl border border-black/15 bg-white/90 shadow-lg overflow-hidden"
           )}
         >
@@ -350,9 +349,19 @@ export function HomeMusicPlayer({
               </div>
             </button>
           ) : (
-            <div className="flex items-center gap-3">
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="收起音乐播放器"
+              className="flex items-center gap-2"
+              onClick={handleMobileCollapse}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter" && e.key !== " ") return;
+                handleMobileCollapse(e);
+              }}
+            >
               <div
-                className="relative size-12 shrink-0 rounded-full overflow-hidden border border-black/10"
+                className="relative size-10 shrink-0 rounded-full overflow-hidden border border-black/10"
                 onClick={async (e) => {
                   e.stopPropagation();
                   await handleTogglePlay();
@@ -363,7 +372,7 @@ export function HomeMusicPlayer({
                     src={coverDataUrl}
                     alt="cover"
                     fill
-                    sizes="48px"
+                    sizes="40px"
                     className={cn(
                       "object-cover transition-opacity",
                       isPlaying ? "opacity-100" : "opacity-80"
@@ -375,9 +384,9 @@ export function HomeMusicPlayer({
                 )}
                 <div className="absolute inset-0 flex items-center justify-center bg-black/20">
                   {isPlaying ? (
-                    <Pause className="size-5 text-white drop-shadow-md" />
+                    <Pause className="size-4 text-white drop-shadow-md" />
                   ) : (
-                    <Play className="size-5 text-white drop-shadow-md ml-0.5" />
+                    <Play className="size-4 text-white drop-shadow-md ml-0.5" />
                   )}
                 </div>
               </div>
@@ -398,7 +407,7 @@ export function HomeMusicPlayer({
                   }
                 }}
               >
-                <div className="truncate font-medium text-[#3F3E3E] text-sm">
+                <div className="truncate font-medium text-[#3F3E3E] text-[13px]">
                   {hasTracks
                     ? (activeTrack?.title ?? "正在播放")
                     : hasLoaded
@@ -409,15 +418,6 @@ export function HomeMusicPlayer({
                   {formatTime(currentTime)} / {duration ? formatTime(duration) : "--:--"}
                 </div>
               </button>
-
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0 size-8 text-[#3F3E3E]/60 hover:bg-black/5 rounded-full"
-                onClick={handleMobileCollapse}
-              >
-                <X className="size-4" />
-              </Button>
             </div>
           )}
         </div>

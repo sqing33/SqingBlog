@@ -135,6 +135,10 @@ export function BlogIndex({
   const [posts, setPosts] = useState<BlogCardPost[]>([]);
   const [pinnedPosts, setPinnedPosts] = useState<BlogCardPost[]>([]);
 
+  const visiblePinnedPosts = useMemo(() => {
+    return page === 1 ? pinnedPosts : [];
+  }, [page, pinnedPosts]);
+
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize]);
 
   const fetchCategories = async () => {
@@ -181,7 +185,8 @@ export function BlogIndex({
         isPinned: Boolean(raw.isPinned),
       });
 
-      setPinnedPosts(pinnedList.map(mapItem));
+      if (nextPage === 1) setPinnedPosts(pinnedList.map(mapItem));
+      else setPinnedPosts([]);
       setPosts(list.map(mapItem));
       setTotal(json?.data?.total ?? list.length);
     } catch {
@@ -371,6 +376,8 @@ export function BlogIndex({
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
+                {mobilePanel === "anime" ? <BlogAnimeQuickLinks /> : null}
+
                 {mobilePanel === "filter" ? (
                   <BlogCategoryFilter
                     categories={categories}
@@ -379,8 +386,6 @@ export function BlogIndex({
                     onReset={onResetCategories}
                   />
                 ) : null}
-
-                {mobilePanel === "anime" ? <BlogAnimeQuickLinks /> : null}
 
                 {mobilePanel === "search" ? (
                   <section
@@ -465,17 +470,17 @@ export function BlogIndex({
 	              </div>
 
 	              {loading ? <div className="latest-empty">加载中…</div> : null}
-	              {!loading && posts.length === 0 && pinnedPosts.length === 0 ? (
+	              {!loading && posts.length === 0 && visiblePinnedPosts.length === 0 ? (
 	                <div className="latest-empty">暂无文章，去写一篇吧</div>
 	              ) : null}
 
-              {!loading && pinnedPosts.length ? (
-                <div className="pinned-list">
-                  {pinnedPosts.map((post) => (
-                    <BlogCard key={post.id} post={post} onClick={() => goToPost(post.id)} />
-                  ))}
-                </div>
-              ) : null}
+	              {!loading && visiblePinnedPosts.length ? (
+	                <div className="pinned-list">
+	                  {visiblePinnedPosts.map((post) => (
+	                    <BlogCard key={post.id} post={post} onClick={() => goToPost(post.id)} />
+	                  ))}
+	                </div>
+	              ) : null}
 
               {!loading && posts.length ? (
                 <div className="post-grid-container">
