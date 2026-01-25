@@ -116,7 +116,10 @@ export function HomeMusicPlayer({
   useEffect(() => {
     if (!showMobileWidget) return;
     if (!autoExpandMobileWidget) return;
-    setMobileExpanded(true);
+    const t = window.setTimeout(() => {
+      setMobileExpanded(true);
+    }, 0);
+    return () => window.clearTimeout(t);
   }, [autoExpandMobileWidget, showMobileWidget]);
 
   const trackList = tracks ?? [];
