@@ -46,7 +46,7 @@ export function toPixhostDirectImageUrl(value: string) {
   const filename = match[2];
   if (!folder || !filename) return input;
 
-  return `https://img1.pixhost.to/images/${folder}/${filename}`;
+  return `https://img2.pixhost.to/images/${folder}/${filename}`;
 }
 
 export async function uploadToPixhost(opts: {
